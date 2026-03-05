@@ -62,6 +62,7 @@ class TextReportFormat extends AbstractOutputFormat {
             opts = "<none>";
         }
 
+        println("# Running with CodSpeed (mode: walltime)");
         println("# JMH version: " + params.getJmhVersion());
         println("# VM version: JDK " + params.getJdkVersion() + ", " + params.getVmName() + ", " + params.getVmVersion());
 

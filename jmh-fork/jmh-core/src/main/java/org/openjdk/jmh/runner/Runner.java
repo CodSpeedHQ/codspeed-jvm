@@ -40,6 +40,9 @@ import org.openjdk.jmh.runner.options.*;
 import org.openjdk.jmh.util.*;
 import org.openjdk.jmh.util.Optional;
 
+import io.codspeed.instrument_hooks.InstrumentHooks;
+import io.codspeed.result.CodSpeedResultCollector;
+
 import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.nio.channels.FileLock;
@@ -556,6 +559,7 @@ public class Runner extends BaseRunner {
 
         etaBeforeBenchmarks(plan);
 
+        InstrumentHooks.getInstance().setIntegration("codspeed-jvm", Version.getPlainVersion());
         try {
             for (ActionPlan r : plan) {
                 Multimap<BenchmarkParams, BenchmarkResult> res;
@@ -578,6 +582,23 @@ public class Runner extends BaseRunner {
             etaAfterBenchmarks();
 
             SortedSet<RunResult> runResults = mergeRunResults(results);
+
+            // Collect CodSpeed walltime results
+            try {
+                String profileFolder = System.getenv("CODSPEED_PROFILE_FOLDER");
+                if (profileFolder == null) {
+                    profileFolder = "/tmp";
+                }
+                int pid = (int) ProcessHandle.current().pid();
+                // TODO: Get and set the actual version
+                CodSpeedResultCollector.collectAndWrite(
+                    runResults, pid, "codspeed-jvm", "1.0.0",
+                    Path.of(profileFolder).resolve("results")
+                );
+            } catch (IOException e) {
+                out.println("WARNING: Failed to write CodSpeed results: " + e.getMessage());
+            }
+
             out.endRun(runResults);
             return runResults;
         } catch (BenchmarkException be) {
@@ -624,6 +645,7 @@ public class Runner extends BaseRunner {
             printOut = forcePrint || printOut;
             printErr = forcePrint || printErr;
 
+            InstrumentHooks.getInstance().startBenchmark();
             out.startBenchmark(params);
             out.println("");
 
@@ -702,6 +724,10 @@ public class Runner extends BaseRunner {
             }
 
             out.endBenchmark(new RunResult(params, results.get(params)).getAggregatedResult());
+
+            InstrumentHooks hooks = InstrumentHooks.getInstance();
+            hooks.stopBenchmark();
+            hooks.setExecutedBenchmark((int) ProcessHandle.current().pid(), params.getBenchmark());
 
         } catch (IOException e) {
             results.clear();
