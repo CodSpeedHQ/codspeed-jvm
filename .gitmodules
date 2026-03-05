@@ -1,0 +1,3 @@
+[submodule "jmh-fork/jmh-core/src/main/java/io/codspeed/instrument_hooks/instrument-hooks"]
+	path = jmh-fork/jmh-core/src/main/java/io/codspeed/instrument_hooks/instrument-hooks
+	url = https://github.com/CodSpeedHQ/instrument-hooks.git
