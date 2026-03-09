@@ -51,6 +51,7 @@ public class BenchmarkGenerator {
     private static final String JMH_STUB_SUFFIX = "_jmhStub";
     private static final String JMH_TESTCLASS_SUFFIX = "_jmhTest";
     protected static final String JMH_GENERATED_SUBPACKAGE = "jmh_generated";
+    private static final String CODSPEED_ROOT_FRAME_PREFIX = "__codspeed_root_frame__";
 
     private final Set<BenchmarkInfo> benchmarkInfos;
     private final CompilerControlPlugin compilerControl;
@@ -103,6 +104,8 @@ public class BenchmarkGenerator {
             for (Mode mode : Mode.values()) {
                 compilerControl.alwaysDontInline("*", "*_" + mode.shortLabel() + JMH_STUB_SUFFIX);
             }
+
+            compilerControl.alwaysDontInline("*", CODSPEED_ROOT_FRAME_PREFIX + "*");
 
             compilerControl.process(source, destination);
         } catch (Throwable t) {
@@ -474,6 +477,11 @@ public class BenchmarkGenerator {
             generateMethod(benchmarkKind, writer, info.methodGroup, states);
         }
 
+        // Generate CodSpeed root frame methods (one per benchmark method, shared across all modes)
+        for (MethodInfo method : info.methodGroup.methods()) {
+            generateRootFrame(writer, method, states, info.methodGroup.isStrictFP());
+        }
+
         // Write out state initializers
         for (String s : states.getStateInitializers()) {
             writer.println(ident(1) + s);
@@ -659,7 +667,7 @@ public class BenchmarkGenerator {
             writer.println(ident(2) + "do {");
 
             invocationProlog(writer, 3, method, states, true);
-            writer.println(ident(3) + emitCall(method, states) + ';');
+            writer.println(ident(3) + emitRootFrameCall(method, states) + ';');
             invocationEpilog(writer, 3, method, states, true);
 
             writer.println(ident(3) + "operations++;");
@@ -792,7 +800,7 @@ public class BenchmarkGenerator {
             writer.println(ident(2) + "do {");
 
             invocationProlog(writer, 3, method, states, true);
-            writer.println(ident(3) + emitCall(method, states) + ';');
+            writer.println(ident(3) + emitRootFrameCall(method, states) + ';');
             invocationEpilog(writer, 3, method, states, true);
 
             writer.println(ident(3) + "operations++;");
@@ -813,6 +821,11 @@ public class BenchmarkGenerator {
         return "InfraControl control, RawResults result, " +
                 "BenchmarkParams benchmarkParams, IterationParams iterationParams, ThreadParams threadParams, " +
                 "Blackhole blackhole, Control notifyControl, int startRndMask";
+    }
+
+    /** Args for calling from within a stub (where the parameter is named "result", not "res") */
+    private String getStubInternalArgs() {
+        return "control, result, benchmarkParams, iterationParams, threadParams, blackhole, notifyControl, startRndMask";
     }
 
     private void methodProlog(PrintWriter writer) {
@@ -964,7 +977,7 @@ public class BenchmarkGenerator {
 
             writer.println(ident(3) + "for (int b = 0; b < batchSize; b++) {");
             writer.println(ident(4) + "if (control.volatileSpoiler) return;");
-            writer.println(ident(4) + "" + emitCall(method, states) + ';');
+            writer.println(ident(4) + "" + emitRootFrameCall(method, states) + ';');
             writer.println(ident(3) + "}");
 
             writer.println(ident(3) + "if (sample) {");
@@ -1062,7 +1075,7 @@ public class BenchmarkGenerator {
 
             invocationProlog(writer, 3, method, states, true);
 
-            writer.println(ident(3) + emitCall(method, states) + ';');
+            writer.println(ident(3) + emitRootFrameCall(method, states) + ';');
 
             invocationEpilog(writer, 3, method, states, true);
 
@@ -1123,6 +1136,21 @@ public class BenchmarkGenerator {
         } else {
             return "blackhole.consume(" + states.getImplicit("bench").localIdentifier + "." + method.getName() + "(" + states.getBenchmarkArgList(method) + "))";
         }
+    }
+
+    private String emitRootFrameCall(MethodInfo method, StateObjectHandler states) {
+        String rootFrameName = CODSPEED_ROOT_FRAME_PREFIX + method.getName();
+        return rootFrameName + "(" + getStubInternalArgs() + prefix(states.getArgList(method)) + ")";
+    }
+
+    private void generateRootFrame(PrintWriter writer, MethodInfo method, StateObjectHandler states, boolean isStrictFP) {
+        String rootFrameName = CODSPEED_ROOT_FRAME_PREFIX + method.getName();
+        writer.println(ident(1) + "@CompilerControl(CompilerControl.Mode.DONT_INLINE)");
+        writer.println(ident(1) + "public static" + (isStrictFP ? " strictfp" : "") + " void " + rootFrameName + "(" +
+                getStubTypeArgs() + prefix(states.getTypeArgList(method)) + ") throws Throwable {");
+        writer.println(ident(2) + emitCall(method, states) + ";");
+        writer.println(ident(1) + "}");
+        writer.println();
     }
 
     static volatile String[] INDENTS;
