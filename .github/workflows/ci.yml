@@ -1,0 +1,94 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read # required for actions/checkout
+  id-token: write # required for OIDC authentication with CodSpeed
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: pre-commit/action@v3.0.1
+        with:
+          extra_args: --all-files
+
+  build-and-run-gradle:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Run Gradle example benchmarks
+        run: ./gradlew :example-gradle:jmh
+
+  build-and-run-maven:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Setup Maven
+        uses: stCarolas/setup-maven@v5
+        with:
+          maven-version: 3.9.9
+      - name: Publish to mavenLocal
+        run: ./gradlew -p jmh-fork publishToMavenLocal
+      - name: Build Maven example
+        run: cd example-maven && mvn package -q
+      - name: Run Maven example benchmarks
+        run: java -jar example-maven/target/example-maven-1.0-SNAPSHOT.jar
+
+  walltime-benchmarks:
+    runs-on: codspeed-macro
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Run the benchmarks
+        uses: CodSpeedHQ/action@main
+        with:
+          mode: walltime
+          run: ./gradlew :example-gradle:jmh
+
+  check:
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+      - lint
+      - build-and-run-gradle
+      - build-and-run-maven
+      - walltime-benchmarks
+    steps:
+      - uses: re-actors/alls-green@release/v1
+        with:
+          jobs: ${{ toJson( needs ) }}
