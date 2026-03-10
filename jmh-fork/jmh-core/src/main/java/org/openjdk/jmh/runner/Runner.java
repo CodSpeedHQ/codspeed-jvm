@@ -260,9 +260,19 @@ public class Runner extends BaseRunner {
         // override the benchmark types;
         // this may yield new benchmark records
         if (!options.getBenchModes().isEmpty()) {
+            // CodSpeed: warn and pick first mode if multiple are specified via CLI (-bm flag)
+            Collection<Mode> benchModes = options.getBenchModes();
+            if (benchModes.size() > 1) {
+                Mode firstMode = benchModes.iterator().next();
+                out.println("WARNING: CodSpeed does not support multiple benchmark modes. " +
+                    "The -bm flag specifies " + benchModes.size() + " modes: " + benchModes + ". " +
+                    "Using only the first mode: " + firstMode);
+                benchModes = Collections.singleton(firstMode);
+            }
+
             List<BenchmarkListEntry> newBenchmarks = new ArrayList<>();
             for (BenchmarkListEntry br : benchmarks) {
-                for (Mode m : options.getBenchModes()) {
+                for (Mode m : benchModes) {
                     newBenchmarks.add(br.cloneWith(m));
                 }
 
@@ -273,14 +283,16 @@ public class Runner extends BaseRunner {
         }
 
         // clone with all the modes
+        // CodSpeed: Mode.All would expand into multiple modes per benchmark, which we don't support.
+        // Instead, pick the first concrete mode and warn.
         {
             List<BenchmarkListEntry> newBenchmarks = new ArrayList<>();
             for (BenchmarkListEntry br : benchmarks) {
                 if (br.getMode() == Mode.All) {
-                    for (Mode mode : Mode.values()) {
-                        if (mode == Mode.All) continue;
-                        newBenchmarks.add(br.cloneWith(mode));
-                    }
+                    Mode firstMode = Mode.SampleTime;
+                    out.println("WARNING: CodSpeed does not support multiple benchmark modes. " +
+                        br.getUsername() + " uses Mode.All, using " + firstMode + " instead.");
+                    newBenchmarks.add(br.cloneWith(firstMode));
                 } else {
                     newBenchmarks.add(br);
                 }
