@@ -34,6 +34,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
+          cache: 'maven'
       - name: Setup Maven
         uses: stCarolas/setup-maven@v5
         with:
@@ -54,6 +55,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
+          cache: 'gradle'
       - name: Run Gradle example benchmarks
         run: ./gradlew :examples:example-gradle:jmh
 
@@ -70,6 +72,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
+          cache: 'maven'
       - name: Setup Maven
         uses: stCarolas/setup-maven@v5
         with:
@@ -94,6 +97,7 @@ jobs:
         with:
           distribution: ${{ matrix.distribution }}
           java-version: 21
+          cache: 'gradle'
 
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo install --locked --git https://github.com/CodSpeedHQ/runner --branch "cod-2309-walltime-benchmarks-with-flamegraphs" codspeed-runner
