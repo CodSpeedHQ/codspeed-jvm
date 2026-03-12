@@ -36,7 +36,14 @@ public class BenchmarkUri {
     String filePath = resolveSourceFile(classQName);
     String benchName = buildBenchName(method, params);
 
-    return filePath + "::" + classQName + "::" + benchName;
+    String uri = filePath + "::" + classQName + "::" + benchName;
+
+    String distribution = System.getenv("CODSPEED_JVM_DISTRIBUTION");
+    if (distribution != null && !distribution.isEmpty()) {
+      uri = uri + "_" + distribution;
+    }
+
+    return uri;
   }
 
   static String buildBenchName(String method, BenchmarkParams params) {
