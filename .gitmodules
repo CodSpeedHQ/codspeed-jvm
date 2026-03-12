@@ -1,3 +1,6 @@
 [submodule "jmh-fork/jmh-core/src/main/java/io/codspeed/instrument_hooks/instrument-hooks"]
 	path = jmh-fork/jmh-core/src/main/java/io/codspeed/instrument_hooks/instrument-hooks
 	url = https://github.com/CodSpeedHQ/instrument-hooks.git
+[submodule "examples/TheAlgorithms-Java"]
+	path = examples/TheAlgorithms-Java
+	url = https://github.com/TheAlgorithms/Java.git
