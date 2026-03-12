@@ -32,6 +32,7 @@ import org.openjdk.jmh.results.BenchmarkResultMetaData;
 import org.openjdk.jmh.results.IterationResult;
 import org.openjdk.jmh.runner.format.OutputFormat;
 import org.openjdk.jmh.runner.options.Options;
+import io.codspeed.BenchmarkUri;
 import io.codspeed.instrument_hooks.InstrumentHooks;
 import org.openjdk.jmh.util.Multimap;
 import org.openjdk.jmh.util.TreeMultimap;
@@ -126,7 +127,7 @@ abstract class BaseRunner {
 
                 if (mode.doMeasurement()) {
                     hooks.stopBenchmark();
-                    hooks.setExecutedBenchmark((int) ProcessHandle.current().pid(), params.getBenchmark());
+                    hooks.setExecutedBenchmark((int) ProcessHandle.current().pid(), BenchmarkUri.fromBenchmarkParams(params));
                 }
             }
 

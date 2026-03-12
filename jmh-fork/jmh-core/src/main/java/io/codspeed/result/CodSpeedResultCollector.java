@@ -2,6 +2,7 @@ package io.codspeed.result;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import io.codspeed.BenchmarkUri;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -33,12 +34,13 @@ public class CodSpeedResultCollector {
       Mode mode = params.getMode();
       TimeUnit timeUnit = params.getTimeUnit();
       String benchmarkName = params.getBenchmark();
+      String uri = BenchmarkUri.fromBenchmarkParams(params);
       double nanosPerUnit = TimeUnit.NANOSECONDS.convert(1, timeUnit);
 
       if (mode == Mode.SampleTime) {
-        collectSampleTime(runResult, benchmarkName, nanosPerUnit, benchmarks);
+        collectSampleTime(runResult, benchmarkName, uri, nanosPerUnit, benchmarks);
       } else {
-        collectIterationBased(runResult, benchmarkName, mode, nanosPerUnit, benchmarks);
+        collectIterationBased(runResult, benchmarkName, uri, mode, nanosPerUnit, benchmarks);
       }
     }
 
@@ -70,6 +72,7 @@ public class CodSpeedResultCollector {
   private static void collectIterationBased(
       RunResult runResult,
       String benchmarkName,
+      String uri,
       Mode mode,
       double nanosPerUnit,
       List<WalltimeBenchmark> benchmarks) {
@@ -101,11 +104,7 @@ public class CodSpeedResultCollector {
 
     benchmarks.add(
         WalltimeBenchmark.fromRuntimeData(
-            benchmarkName,
-            benchmarkName,
-            toLongArray(itersPerRound),
-            toLongArray(timesPerRoundNs),
-            null));
+            benchmarkName, uri, toLongArray(itersPerRound), toLongArray(timesPerRoundNs), null));
   }
 
   /**
@@ -118,6 +117,7 @@ public class CodSpeedResultCollector {
   private static void collectSampleTime(
       RunResult runResult,
       String benchmarkName,
+      String uri,
       double nanosPerUnit,
       List<WalltimeBenchmark> benchmarks) {
     List<Long> itersPerRound = new ArrayList<>();
@@ -151,11 +151,7 @@ public class CodSpeedResultCollector {
 
     benchmarks.add(
         WalltimeBenchmark.fromRuntimeData(
-            benchmarkName,
-            benchmarkName,
-            toLongArray(itersPerRound),
-            toLongArray(timesPerRoundNs),
-            null));
+            benchmarkName, uri, toLongArray(itersPerRound), toLongArray(timesPerRoundNs), null));
   }
 
   private static long[] toLongArray(List<Long> list) {
