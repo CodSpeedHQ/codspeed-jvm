@@ -12,6 +12,7 @@ dependencies {
     api("net.sf.jopt-simple:jopt-simple:5.0.4")
     api("org.apache.commons:commons-math3:3.6.1")
     implementation("com.google.code.gson:gson:2.11.0")
+    testImplementation("junit:junit:4.13.2")
 }
 
 tasks.compileJava {

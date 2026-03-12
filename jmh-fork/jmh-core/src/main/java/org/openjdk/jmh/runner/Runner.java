@@ -40,6 +40,7 @@ import org.openjdk.jmh.runner.options.*;
 import org.openjdk.jmh.util.*;
 import org.openjdk.jmh.util.Optional;
 
+import io.codspeed.BenchmarkUri;
 import io.codspeed.instrument_hooks.InstrumentHooks;
 import io.codspeed.result.CodSpeedResultCollector;
 
@@ -739,7 +740,7 @@ public class Runner extends BaseRunner {
 
             InstrumentHooks hooks = InstrumentHooks.getInstance();
             hooks.stopBenchmark();
-            hooks.setExecutedBenchmark((int) server.getClientPid(), params.getBenchmark());
+            hooks.setExecutedBenchmark((int) server.getClientPid(), BenchmarkUri.fromBenchmarkParams(params));
 
         } catch (IOException e) {
             results.clear();
