@@ -727,7 +727,7 @@ public class Runner extends BaseRunner {
 
             InstrumentHooks hooks = InstrumentHooks.getInstance();
             hooks.stopBenchmark();
-            hooks.setExecutedBenchmark((int) ProcessHandle.current().pid(), params.getBenchmark());
+            hooks.setExecutedBenchmark((int) server.getClientPid(), params.getBenchmark());
 
         } catch (IOException e) {
             results.clear();
