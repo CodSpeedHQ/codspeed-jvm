@@ -32,6 +32,7 @@ import org.openjdk.jmh.results.BenchmarkResultMetaData;
 import org.openjdk.jmh.results.IterationResult;
 import org.openjdk.jmh.runner.format.OutputFormat;
 import org.openjdk.jmh.runner.options.Options;
+import io.codspeed.instrument_hooks.InstrumentHooks;
 import org.openjdk.jmh.util.Multimap;
 import org.openjdk.jmh.util.TreeMultimap;
 import org.openjdk.jmh.util.Utils;
@@ -79,12 +80,16 @@ abstract class BaseRunner {
     protected Multimap<BenchmarkParams, BenchmarkResult> runBenchmarksEmbedded(ActionPlan actionPlan) {
         Multimap<BenchmarkParams, BenchmarkResult> results = new TreeMultimap<>();
 
+        InstrumentHooks hooks = InstrumentHooks.getInstance();
         for (Action action : actionPlan.getActions()) {
             BenchmarkParams params = action.getParams();
             ActionMode mode = action.getMode();
 
             long startTime = System.currentTimeMillis();
 
+            if (mode.doMeasurement()) {
+                hooks.startBenchmark();
+            }
             out.startBenchmark(params);
             out.println("");
             etaBeforeBenchmark();
@@ -118,6 +123,11 @@ abstract class BaseRunner {
                 BenchmarkResult br = new BenchmarkResult(params, res, md);
                 results.put(params, br);
                 out.endBenchmark(br);
+
+                if (mode.doMeasurement()) {
+                    hooks.stopBenchmark();
+                    hooks.setExecutedBenchmark((int) ProcessHandle.current().pid(), params.getBenchmark());
+                }
             }
 
             etaAfterBenchmark(params);
