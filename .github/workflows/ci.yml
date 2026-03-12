@@ -55,7 +55,7 @@ jobs:
           distribution: temurin
           java-version: 21
       - name: Run Gradle example benchmarks
-        run: ./gradlew :example-gradle:jmh
+        run: ./gradlew :examples:example-gradle:jmh
 
   build-and-run-maven:
     strategy:
@@ -77,9 +77,9 @@ jobs:
       - name: Publish to mavenLocal
         run: ./gradlew -p jmh-fork publishToMavenLocal
       - name: Build Maven example
-        run: cd example-maven && mvn package -q
+        run: cd examples/example-maven && mvn package -q
       - name: Run Maven example benchmarks
-        run: java -jar example-maven/target/example-maven-1.0-SNAPSHOT.jar
+        run: java -jar examples/example-maven/target/example-maven-1.0-SNAPSHOT.jar
 
   walltime-benchmarks:
     runs-on: codspeed-macro
@@ -95,7 +95,7 @@ jobs:
         uses: CodSpeedHQ/action@main
         with:
           mode: walltime
-          run: ./gradlew :example-gradle:jmh
+          run: ./gradlew :examples:example-gradle:jmh
 
   check:
     runs-on: ubuntu-latest

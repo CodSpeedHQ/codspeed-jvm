@@ -1,4 +1,4 @@
 rootProject.name = "codspeed-jvm"
 
-include("example-gradle")
+include("examples:example-gradle")
 includeBuild("jmh-fork")
