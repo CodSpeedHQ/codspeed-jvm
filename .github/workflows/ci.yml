@@ -34,6 +34,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
+          cache: 'maven'
       - name: Setup Maven
         uses: stCarolas/setup-maven@v5
         with:
@@ -54,6 +55,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
+          cache: 'gradle'
       - name: Run Gradle example benchmarks
         run: ./gradlew :examples:example-gradle:jmh
 
@@ -70,6 +72,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
+          cache: 'maven'
       - name: Setup Maven
         uses: stCarolas/setup-maven@v5
         with:
@@ -91,6 +94,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
+          cache: 'gradle'
       - name: Run the benchmarks
         uses: CodSpeedHQ/action@main
         with:
