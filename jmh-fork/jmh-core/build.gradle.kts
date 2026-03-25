@@ -45,6 +45,7 @@ tasks.register<Exec>("compileNative") {
     commandLine(
         "gcc",
         "-shared", "-fPIC", "-O2", "-std=c11",
+        "-Wno-format", "-Wno-format-security",
         "-o", outputLib.absolutePath,
         "${nativeDir}/instrument_hooks_jni.c",
         "${instrumentHooksDir}/dist/core.c",
