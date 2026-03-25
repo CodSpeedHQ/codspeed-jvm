@@ -28,9 +28,9 @@ questions.
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.openjdk.jmh</groupId>
+        <groupId>io.codspeed.jmh</groupId>
         <artifactId>jmh-parent</artifactId>
-        <version>1.37.0-codspeed.1</version>
+        <version>0.1.0</version>
     </parent>
 
     <name>JMH Core Integration Tests</name>
@@ -45,7 +45,7 @@ questions.
 
     <dependencies>
         <dependency>
-            <groupId>org.openjdk.jmh</groupId>
+            <groupId>io.codspeed.jmh</groupId>
             <artifactId>jmh-core</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -107,7 +107,7 @@ questions.
             </properties>
             <dependencies>
                 <dependency>
-                    <groupId>org.openjdk.jmh</groupId>
+                    <groupId>io.codspeed.jmh</groupId>
                     <artifactId>jmh-generator-annprocess</artifactId>
                     <version>${project.version}</version>
                     <scope>provided</scope>
@@ -133,7 +133,7 @@ questions.
             </properties>
             <dependencies>
                 <dependency>
-                    <groupId>org.openjdk.jmh</groupId>
+                    <groupId>io.codspeed.jmh</groupId>
                     <artifactId>jmh-generator-annprocess</artifactId>
                     <version>${project.version}</version>
                     <scope>provided</scope>
@@ -163,7 +163,7 @@ questions.
             </properties>
             <dependencies>
                 <dependency>
-                    <groupId>org.openjdk.jmh</groupId>
+                    <groupId>io.codspeed.jmh</groupId>
                     <artifactId>jmh-generator-annprocess</artifactId>
                     <version>${project.version}</version>
                     <scope>provided</scope>
@@ -193,7 +193,7 @@ questions.
             </properties>
             <dependencies>
                 <dependency>
-                    <groupId>org.openjdk.jmh</groupId>
+                    <groupId>io.codspeed.jmh</groupId>
                     <artifactId>jmh-generator-annprocess</artifactId>
                     <version>${project.version}</version>
                     <scope>provided</scope>
@@ -223,7 +223,7 @@ questions.
             </properties>
             <dependencies>
                 <dependency>
-                    <groupId>org.openjdk.jmh</groupId>
+                    <groupId>io.codspeed.jmh</groupId>
                     <artifactId>jmh-generator-bytecode</artifactId>
                     <version>${project.version}</version>
                 </dependency>
@@ -307,7 +307,7 @@ questions.
             </properties>
             <dependencies>
                 <dependency>
-                    <groupId>org.openjdk.jmh</groupId>
+                    <groupId>io.codspeed.jmh</groupId>
                     <artifactId>jmh-generator-bytecode</artifactId>
                     <version>${project.version}</version>
                 </dependency>
