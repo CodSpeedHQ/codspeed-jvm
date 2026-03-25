@@ -7,7 +7,7 @@ group = "io.codspeed"
 version = "1.0-SNAPSHOT"
 
 jmh {
-    jmhVersion.set("1.37.0-codspeed.1")
+    jmhVersion.set("0.1.0")
 }
 
 sourceSets {

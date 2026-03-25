@@ -12,17 +12,17 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.source>21</maven.compiler.source>
     <maven.compiler.target>21</maven.compiler.target>
-    <jmh.version>1.37.0-codspeed.1</jmh.version>
+    <jmh.version>0.1.0</jmh.version>
   </properties>
 
   <dependencies>
     <dependency>
-      <groupId>org.openjdk.jmh</groupId>
+      <groupId>io.codspeed.jmh</groupId>
       <artifactId>jmh-core</artifactId>
       <version>${jmh.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.openjdk.jmh</groupId>
+      <groupId>io.codspeed.jmh</groupId>
       <artifactId>jmh-generator-annprocess</artifactId>
       <version>${jmh.version}</version>
       <scope>provided</scope>

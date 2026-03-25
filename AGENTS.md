@@ -70,10 +70,10 @@ pre-commit run --all-files
 
 ### Publishing JMH Fork
 
-The JMH fork uses versioning scheme `1.37.0-codspeed.N`. When updating versions:
+The JMH fork is published under group ID `io.codspeed.jmh`. When updating versions:
 
 ```bash
-cd jmh-fork && mvn versions:set -DnewVersion=1.37.0-codspeed.2
+cd jmh-fork && mvn versions:set -DnewVersion=x.y.z
 ```
 
 Then update the version reference in root `build.gradle.kts`.
@@ -111,7 +111,7 @@ The repository combines Maven and Gradle via Gradle's composite build feature:
 ## Modifying JMH Fork
 
 1. Make changes in `jmh-fork/`
-2. Bump version: `cd jmh-fork && mvn versions:set -DnewVersion=X.Y.Z-codspeed.N`
+2. Bump version: `cd jmh-fork && mvn versions:set -DnewVersion=X.Y.Z`
 3. Publish locally: `cd jmh-fork && mvn clean install -DskipTests -q`
 4. Update version reference in root `build.gradle.kts` if needed
 5. Test both Gradle and Maven examples to verify compatibility
