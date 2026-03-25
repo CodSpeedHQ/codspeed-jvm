@@ -100,7 +100,7 @@ jobs:
           cache: 'gradle'
 
       - uses: dtolnay/rust-toolchain@stable
-      - run: cargo install --locked --git https://github.com/CodSpeedHQ/runner --branch "cod-2309-walltime-benchmarks-with-flamegraphs" codspeed-runner
+      - run: cargo install --locked --git https://github.com/CodSpeedHQ/runner codspeed-runner
 
       - name: Run the benchmarks
         uses: CodSpeedHQ/action@main
