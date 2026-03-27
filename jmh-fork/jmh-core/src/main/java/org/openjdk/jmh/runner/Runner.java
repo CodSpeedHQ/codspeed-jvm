@@ -265,9 +265,10 @@ public class Runner extends BaseRunner {
         // override the benchmark types;
         // this may yield new benchmark records
         if (!options.getBenchModes().isEmpty()) {
-            // CodSpeed: warn and pick first mode if multiple are specified via CLI (-bm flag)
             Collection<Mode> benchModes = options.getBenchModes();
-            if (benchModes.size() > 1) {
+
+            // CodSpeed: warn and pick first mode if multiple are specified via CLI (-bm flag)
+            if (InstrumentHooks.getInstance().isInstrumented() && benchModes.size() > 1) {
                 Mode firstMode = benchModes.iterator().next();
                 out.println("WARNING: CodSpeed does not support multiple benchmark modes. " +
                     "The -bm flag specifies " + benchModes.size() + " modes: " + benchModes + ". " +
@@ -288,18 +289,28 @@ public class Runner extends BaseRunner {
         }
 
         // clone with all the modes
-        // CodSpeed: Mode.All would expand into multiple modes per benchmark, which we don't support.
-        // Instead, pick the first concrete mode and warn.
         {
+            boolean isInstrumented = InstrumentHooks.getInstance().isInstrumented();
             List<BenchmarkListEntry> newBenchmarks = new ArrayList<>();
             for (BenchmarkListEntry br : benchmarks) {
-                if (br.getMode() == Mode.All) {
+                if (br.getMode() != Mode.All) {
+                    newBenchmarks.add(br);
+                    continue;
+                }
+
+                if (isInstrumented) {
+                    // CodSpeed: Mode.All would expand into multiple modes per benchmark,
+                    // which we don't support. Pick a single mode and warn.
                     Mode firstMode = Mode.SampleTime;
                     out.println("WARNING: CodSpeed does not support multiple benchmark modes. " +
                         br.getUsername() + " uses Mode.All, using " + firstMode + " instead.");
                     newBenchmarks.add(br.cloneWith(firstMode));
                 } else {
-                    newBenchmarks.add(br);
+                    // Standard JMH: expand Mode.All into all concrete modes
+                    for (Mode m : Mode.values()) {
+                        if (m == Mode.All) continue;
+                        newBenchmarks.add(br.cloneWith(m));
+                    }
                 }
             }
 
@@ -596,20 +607,22 @@ public class Runner extends BaseRunner {
 
             SortedSet<RunResult> runResults = mergeRunResults(results);
 
-            // Collect CodSpeed walltime results
-            try {
-                String profileFolder = System.getenv("CODSPEED_PROFILE_FOLDER");
-                if (profileFolder == null) {
-                    profileFolder = "/tmp";
+            // Collect CodSpeed walltime results (only when instrumented)
+            if (InstrumentHooks.getInstance().isInstrumented()) {
+                try {
+                    String profileFolder = System.getenv("CODSPEED_PROFILE_FOLDER");
+                    if (profileFolder == null) {
+                        profileFolder = "/tmp";
+                    }
+                    int pid = (int) ProcessHandle.current().pid();
+                    // TODO: Get and set the actual version
+                    CodSpeedResultCollector.collectAndWrite(
+                        runResults, pid, "codspeed-jvm", "1.0.0",
+                        Path.of(profileFolder).resolve("results")
+                    );
+                } catch (IOException e) {
+                    out.println("WARNING: Failed to write CodSpeed results: " + e.getMessage());
                 }
-                int pid = (int) ProcessHandle.current().pid();
-                // TODO: Get and set the actual version
-                CodSpeedResultCollector.collectAndWrite(
-                    runResults, pid, "codspeed-jvm", "1.0.0",
-                    Path.of(profileFolder).resolve("results")
-                );
-            } catch (IOException e) {
-                out.println("WARNING: Failed to write CodSpeed results: " + e.getMessage());
             }
 
             out.endRun(runResults);

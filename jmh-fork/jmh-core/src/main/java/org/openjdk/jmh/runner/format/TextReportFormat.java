@@ -38,6 +38,7 @@ import org.openjdk.jmh.runner.IterationType;
 import org.openjdk.jmh.runner.options.TimeValue;
 import org.openjdk.jmh.runner.options.VerboseMode;
 import org.openjdk.jmh.util.Utils;
+import io.codspeed.instrument_hooks.InstrumentHooks;
 
 import java.io.PrintStream;
 import java.util.ArrayList;
@@ -62,7 +63,9 @@ class TextReportFormat extends AbstractOutputFormat {
             opts = "<none>";
         }
 
-        println("# Running with CodSpeed (mode: walltime)");
+        if (InstrumentHooks.getInstance().isInstrumented()) {
+            println("# Running with CodSpeed (mode: walltime)");
+        }
         println("# JMH version: " + params.getJmhVersion());
         println("# VM version: JDK " + params.getJdkVersion() + ", " + params.getVmName() + ", " + params.getVmVersion());
 
