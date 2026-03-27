@@ -615,9 +615,8 @@ public class Runner extends BaseRunner {
                         profileFolder = "/tmp";
                     }
                     int pid = (int) ProcessHandle.current().pid();
-                    // TODO: Get and set the actual version
                     CodSpeedResultCollector.collectAndWrite(
-                        runResults, pid, "codspeed-jvm", "1.0.0",
+                        runResults, pid, "codspeed-jvm", Version.getPlainVersion(),
                         Path.of(profileFolder).resolve("results")
                     );
                 } catch (IOException e) {
