@@ -86,17 +86,22 @@ jobs:
 
   walltime-benchmarks:
     runs-on: codspeed-macro
+    strategy:
+      matrix:
+        distribution: [corretto, temurin, oracle, zulu, microsoft, semeru]
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: true
       - uses: actions/setup-java@v4
         with:
-          distribution: temurin
+          distribution: ${{ matrix.distribution }}
           java-version: 21
           cache: 'gradle'
       - name: Run the benchmarks
         uses: CodSpeedHQ/action@main
+        env:
+          CODSPEED_SKIP_UPLOAD: ${{ matrix.distribution != 'temurin' }}
         with:
           mode: walltime
           run: ./gradlew :examples:example-gradle:jmh
