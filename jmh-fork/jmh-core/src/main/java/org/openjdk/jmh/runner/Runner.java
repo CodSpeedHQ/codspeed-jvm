@@ -69,7 +69,6 @@ public class Runner extends BaseRunner {
     private static final int TAIL_LINES_ON_ERROR = Integer.getInteger("jmh.tailLines", 20);
     private static final String JMH_LOCK_FILE = System.getProperty("java.io.tmpdir") + "/jmh.lock";
     private static final Boolean JMH_LOCK_IGNORE = Boolean.getBoolean("jmh.ignoreLock");
-    private static boolean codspeedForksWarningShown = false;
 
     private final BenchmarkList list;
     private int cpuCount;
@@ -477,17 +476,6 @@ public class Runner extends BaseRunner {
         int warmupForks = options.getWarmupForkCount().orElse(
                 benchmark.getWarmupForks().orElse(
                         Defaults.WARMUP_FORKS));
-
-        // TODO(COD-1788): Remove this after process filtering is supported
-        if (InstrumentHooks.getInstance().isInstrumented() && !"1".equals(System.getenv("CODSPEED_JVM_ALLOW_FORKS"))) {
-            if ((forks > 0 || warmupForks > 0) && !codspeedForksWarningShown) {
-                out.println("# CodSpeed: forcing forks=0 to enable flamegraph support.");
-                out.println("# Set CODSPEED_JVM_ALLOW_FORKS=1 to disable this override.");
-                codspeedForksWarningShown = true;
-            }
-            forks = 0;
-            warmupForks = 0;
-        }
 
         TimeUnit timeUnit = options.getTimeUnit().orElse(
                 benchmark.getTimeUnit().orElse(
