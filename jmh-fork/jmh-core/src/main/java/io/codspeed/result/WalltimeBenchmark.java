@@ -5,7 +5,7 @@ import java.util.Arrays;
 
 public class WalltimeBenchmark {
   private static final double IQR_OUTLIER_FACTOR = 1.5;
-  private static final double STDEV_OUTLIER_FACTOR = 2.0;
+  private static final double STDEV_OUTLIER_FACTOR = 3.0;
 
   private final String name;
   private final String uri;
