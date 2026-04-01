@@ -266,13 +266,12 @@ public class Runner extends BaseRunner {
         if (!options.getBenchModes().isEmpty()) {
             Collection<Mode> benchModes = options.getBenchModes();
 
-            // CodSpeed: warn and pick first mode if multiple are specified via CLI (-bm flag)
-            if (InstrumentHooks.getInstance().isInstrumented() && benchModes.size() > 1) {
-                Mode firstMode = benchModes.iterator().next();
-                out.println("WARNING: CodSpeed does not support multiple benchmark modes. " +
-                    "The -bm flag specifies " + benchModes.size() + " modes: " + benchModes + ". " +
-                    "Using only the first mode: " + firstMode);
-                benchModes = Collections.singleton(firstMode);
+            // CodSpeed: normalize CLI-specified modes to AverageTime
+            if (InstrumentHooks.getInstance().isInstrumented()) {
+                if (!benchModes.equals(Collections.singleton(Mode.AverageTime))) {
+                    out.println("# CodSpeed: normalizing benchmark mode to AverageTime (was: " + benchModes + ").");
+                }
+                benchModes = Collections.singleton(Mode.AverageTime);
             }
 
             List<BenchmarkListEntry> newBenchmarks = new ArrayList<>();
@@ -292,24 +291,24 @@ public class Runner extends BaseRunner {
             boolean isInstrumented = InstrumentHooks.getInstance().isInstrumented();
             List<BenchmarkListEntry> newBenchmarks = new ArrayList<>();
             for (BenchmarkListEntry br : benchmarks) {
-                if (br.getMode() != Mode.All) {
-                    newBenchmarks.add(br);
+                if (isInstrumented) {
+                    // CodSpeed: normalize any mode to AverageTime
+                    if (br.getMode() != Mode.AverageTime) {
+                        out.println("# CodSpeed: normalizing benchmark mode to AverageTime " +
+                            "(was: " + br.getMode() + ") for " + br.getUsername() + ".");
+                    }
+                    newBenchmarks.add(br.cloneWith(Mode.AverageTime));
                     continue;
                 }
 
-                if (isInstrumented) {
-                    // CodSpeed: Mode.All would expand into multiple modes per benchmark,
-                    // which we don't support. Pick a single mode and warn.
-                    Mode firstMode = Mode.SampleTime;
-                    out.println("WARNING: CodSpeed does not support multiple benchmark modes. " +
-                        br.getUsername() + " uses Mode.All, using " + firstMode + " instead.");
-                    newBenchmarks.add(br.cloneWith(firstMode));
-                } else {
-                    // Standard JMH: expand Mode.All into all concrete modes
+                // Standard JMH: expand Mode.All into all concrete modes
+                if (br.getMode() == Mode.All) {
                     for (Mode m : Mode.values()) {
                         if (m == Mode.All) continue;
                         newBenchmarks.add(br.cloneWith(m));
                     }
+                } else {
+                    newBenchmarks.add(br);
                 }
             }
 

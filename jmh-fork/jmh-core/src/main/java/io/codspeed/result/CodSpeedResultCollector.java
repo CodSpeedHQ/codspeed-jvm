@@ -7,16 +7,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.infra.BenchmarkParams;
 import org.openjdk.jmh.results.BenchmarkResult;
 import org.openjdk.jmh.results.IterationResult;
 import org.openjdk.jmh.results.RunResult;
-import org.openjdk.jmh.util.Statistics;
 
 public class CodSpeedResultCollector {
 
@@ -31,17 +27,12 @@ public class CodSpeedResultCollector {
 
     for (RunResult runResult : runResults) {
       BenchmarkParams params = runResult.getParams();
-      Mode mode = params.getMode();
       TimeUnit timeUnit = params.getTimeUnit();
       String benchmarkName = params.getBenchmark();
       String uri = BenchmarkUri.fromBenchmarkParams(params);
       double nanosPerUnit = TimeUnit.NANOSECONDS.convert(1, timeUnit);
 
-      if (mode == Mode.SampleTime) {
-        collectSampleTime(runResult, benchmarkName, uri, nanosPerUnit, benchmarks);
-      } else {
-        collectIterationBased(runResult, benchmarkName, uri, mode, nanosPerUnit, benchmarks);
-      }
+      collectAverageTime(runResult, benchmarkName, uri, nanosPerUnit, benchmarks);
     }
 
     if (benchmarks.isEmpty()) {
@@ -59,21 +50,19 @@ public class CodSpeedResultCollector {
   }
 
   /**
-   * Collects results from iteration-based modes (Throughput, AverageTime, SingleShotTime).
+   * Collects results from AverageTime mode.
    *
-   * <p>In these modes, JMH runs a fixed time window per iteration and reports an aggregated score.
-   * Each iteration produces one data point: the total wall time for all ops in that iteration. We
-   * back-calculate the total wall time from the score (see inline comments for the formulas per
-   * mode).
+   * <p>JMH runs a fixed time window per iteration and reports the average time per operation. Each
+   * iteration produces one data point: the total wall time for all ops in that iteration, which we
+   * back-calculate from the score: {@code timeNs = score * ops * nanosPerUnit}.
    *
-   * <p>Compare with {@link #collectSampleTime}, where JMH records per-operation latencies in a
-   * histogram, giving finer-grained data.
+   * <p>This is structurally equivalent to how criterion (codspeed-rust) collects walltime data:
+   * each round has a variable iteration count and a measured total wall time.
    */
-  private static void collectIterationBased(
+  private static void collectAverageTime(
       RunResult runResult,
       String benchmarkName,
       String uri,
-      Mode mode,
       double nanosPerUnit,
       List<WalltimeBenchmark> benchmarks) {
     List<Long> itersPerRound = new ArrayList<>();
@@ -84,64 +73,11 @@ public class CodSpeedResultCollector {
         long ops = ir.getMetadata().getMeasuredOps();
         double score = ir.getPrimaryResult().getScore();
 
-        long timeNs;
-        if (mode == Mode.Throughput) {
-          // score = ops * nanosPerUnit / durationNs
-          timeNs = Math.round(ops * nanosPerUnit / score);
-        } else {
-          // avgt/ss: score = durationNs / (ops * nanosPerUnit)
-          timeNs = Math.round(score * ops * nanosPerUnit);
-        }
+        // avgt: score = durationNs / (ops * nanosPerUnit)
+        long timeNs = Math.round(score * ops * nanosPerUnit);
 
         itersPerRound.add(ops);
         timesPerRoundNs.add(timeNs);
-      }
-    }
-
-    if (itersPerRound.isEmpty()) {
-      return;
-    }
-
-    benchmarks.add(
-        WalltimeBenchmark.fromRuntimeData(
-            benchmarkName, uri, toLongArray(itersPerRound), toLongArray(timesPerRoundNs), null));
-  }
-
-  /**
-   * Collects results from SampleTime mode.
-   *
-   * <p>In this mode, JMH measures each individual operation's latency separately and records them
-   * in a histogram. Each sample is a direct timing of one op, giving finer-grained data than
-   * iteration-based modes. We treat each sample as its own round with 1 iteration.
-   */
-  private static void collectSampleTime(
-      RunResult runResult,
-      String benchmarkName,
-      String uri,
-      double nanosPerUnit,
-      List<WalltimeBenchmark> benchmarks) {
-    List<Long> itersPerRound = new ArrayList<>();
-    List<Long> timesPerRoundNs = new ArrayList<>();
-
-    for (BenchmarkResult br : runResult.getBenchmarkResults()) {
-      for (IterationResult ir : br.getIterationResults()) {
-        Statistics stats = ir.getPrimaryResult().getStatistics();
-        Iterator<Map.Entry<Double, Long>> rawData = stats.getRawData();
-
-        while (rawData.hasNext()) {
-          Map.Entry<Double, Long> entry = rawData.next();
-          double valueInUnit = entry.getKey();
-          long count = entry.getValue();
-
-          // Each sample is one op's time in the output unit.
-          // Convert back to nanoseconds.
-          long timeNs = Math.round(valueInUnit * nanosPerUnit);
-
-          for (long i = 0; i < count; i++) {
-            itersPerRound.add(1L);
-            timesPerRoundNs.add(timeNs);
-          }
-        }
       }
     }
 
