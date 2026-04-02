@@ -98,7 +98,7 @@ public class BenchmarkUri {
 
     Path current = Paths.get(System.getProperty("user.dir")).toAbsolutePath().normalize();
     while (current != null) {
-      if (Files.isDirectory(current.resolve(".git"))) {
+      if (Files.exists(current.resolve(".git"))) {
         cachedGitRoot = current;
         return current;
       }
