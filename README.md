@@ -1,23 +1,22 @@
 <div align="center">
 <h1>codspeed-jvm</h1>
 
-[![CI](https://github.com/AvalancheHQ/codspeed-jvm/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/AvalancheHQ/codspeed-jvm/actions/workflows/ci.yml)
+[![CI](https://github.com/CodSpeedHQ/codspeed-jvm/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/CodSpeedHQ/codspeed-jvm/actions/workflows/ci.yml)
 [![Discord](https://img.shields.io/badge/chat%20on-discord-7289da.svg)](https://discord.com/invite/MxpaCfKSqF)
-[![CodSpeed Badge](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json)](https://codspeed.io/AvalancheHQ/codspeed-jvm)
+[![CodSpeed Badge](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json)](https://codspeed.io/CodSpeedHQ/codspeed-jvm)
 
 </div>
 
 This repo contains the CodSpeed integration for JVM-based projects using [JMH](https://github.com/openjdk/jmh):
 
 - [`jmh-fork`](./jmh-fork/): Forked JMH with CodSpeed walltime result collection
-- [`instrument-hooks-jvm`](./instrument-hooks-jvm/): JNI bindings for CodSpeed [instrument hooks](https://github.com/CodSpeedHQ/instrument-hooks)
-- [`example`](./example/): Example JMH benchmarks
+- [`examples`](./examples/): Example JMH benchmarks (Gradle and Maven)
 
 ## Usage
 
 Add the CodSpeed JMH fork to your project and write benchmarks as you normally would with JMH. When running your benchmarks in CI with CodSpeed, the results will be automatically collected and reported.
 
-For information on how to integrate it, see the [CodSpeed documentation](https://codspeed.io/docs). If you need further information to integrate CodSpeed to your project, please feel free to open an issue or ask for help on our discord server.
+For information on how to integrate it, see the [CodSpeed documentation](https://codspeed.io/docs). If you need further information to integrate CodSpeed to your project, please feel free to open an issue or ask for help on our [Discord server](https://discord.com/invite/MxpaCfKSqF).
 
 ## Local Usage
 
@@ -29,19 +28,14 @@ For information on how to integrate it, see the [CodSpeed documentation](https:/
 
 ### Setup
 
-1. Build and install the instrument hooks to your local Maven repository:
-```bash
-./gradlew :instrument-hooks-jvm:publishToMavenLocal
-```
-
-2. Build and install the JMH fork:
+1. Build and install the JMH fork to your local Maven repository:
 ```bash
 cd jmh-fork && mvn clean install -DskipTests -q
 ```
 
-3. Run the example benchmarks:
+2. Run the example benchmarks:
 ```bash
-./gradlew :example:jmh
+./gradlew :examples:example-gradle:jmh
 ```
 
 ### Running with CodSpeed locally
@@ -49,5 +43,5 @@ cd jmh-fork && mvn clean install -DskipTests -q
 To run the benchmarks with CodSpeed locally, you need to install the [CodSpeed runner](https://codspeed.io/docs):
 
 ```bash
-codspeed run --mode walltime -- ./gradlew :example:jmh
+codspeed run --mode walltime -- ./gradlew :examples:example-gradle:jmh
 ```
