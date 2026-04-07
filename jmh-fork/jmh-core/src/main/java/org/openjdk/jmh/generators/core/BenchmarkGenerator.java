@@ -511,7 +511,7 @@ public class BenchmarkGenerator {
                 TimeUnit.class, CompilerControl.class,
                 InfraControl.class, ThreadParams.class,
                 BenchmarkTaskResult.class,
-                Result.class, ThroughputResult.class, AverageTimeResult.class,
+                Result.class, ThroughputResult.class, AverageTimeResult.class, CodSpeedResult.class,
                 SampleTimeResult.class, SingleShotResult.class, SampleBuffer.class,
                 Mode.class, Fork.class, Measurement.class, Threads.class, Warmup.class,
                 BenchmarkMode.class, RawResults.class, ResultRole.class,
@@ -541,6 +541,9 @@ public class BenchmarkGenerator {
                 break;
             case SampleTime:
                 generateSampleTime(writer, benchmarkKind, methodGroup, states);
+                break;
+            case CodSpeed:
+                generateCodSpeed(writer, benchmarkKind, methodGroup, states);
                 break;
             case SingleShotTime:
                 generateSingleShotTime(writer, benchmarkKind, methodGroup, states);
@@ -687,6 +690,18 @@ public class BenchmarkGenerator {
     }
 
     private void generateAverageTime(PrintWriter writer, Mode benchmarkKind, MethodGroup methodGroup, StateObjectHandler states) {
+        generateAverageTimeImpl(writer, benchmarkKind, methodGroup, states, "AverageTimeResult");
+    }
+
+    /**
+     * Generates CodSpeed mode — identical measurement loop to AverageTime, but constructs
+     * CodSpeedResult (which retains raw ops + durationNs) instead of AverageTimeResult.
+     */
+    private void generateCodSpeed(PrintWriter writer, Mode benchmarkKind, MethodGroup methodGroup, StateObjectHandler states) {
+        generateAverageTimeImpl(writer, benchmarkKind, methodGroup, states, "CodSpeedResult");
+    }
+
+    private void generateAverageTimeImpl(PrintWriter writer, Mode benchmarkKind, MethodGroup methodGroup, StateObjectHandler states, String resultClass) {
         writer.println(ident(1) + "public BenchmarkTaskResult " + methodGroup.getName() + "_" + benchmarkKind +
                 "(InfraControl control, ThreadParams threadParams) throws Throwable {");
 
@@ -770,10 +785,10 @@ public class BenchmarkGenerator {
 
             writer.println(ident(3) + "BenchmarkTaskResult results = new BenchmarkTaskResult((long)res.allOps, (long)res.measuredOps);");
             if (isSingleMethod) {
-                writer.println(ident(3) + "results.add(new AverageTimeResult(ResultRole.PRIMARY, \"" + method.getName() + "\", res.measuredOps, res.getTime(), benchmarkParams.getTimeUnit()));");
+                writer.println(ident(3) + "results.add(new " + resultClass + "(ResultRole.PRIMARY, \"" + method.getName() + "\", res.measuredOps, res.getTime(), benchmarkParams.getTimeUnit()));");
             } else {
-                writer.println(ident(3) + "results.add(new AverageTimeResult(ResultRole.PRIMARY, \"" + methodGroup.getName() + "\", res.measuredOps, res.getTime(), benchmarkParams.getTimeUnit()));");
-                writer.println(ident(3) + "results.add(new AverageTimeResult(ResultRole.SECONDARY, \"" + method.getName() + "\", res.measuredOps, res.getTime(), benchmarkParams.getTimeUnit()));");
+                writer.println(ident(3) + "results.add(new " + resultClass + "(ResultRole.PRIMARY, \"" + methodGroup.getName() + "\", res.measuredOps, res.getTime(), benchmarkParams.getTimeUnit()));");
+                writer.println(ident(3) + "results.add(new " + resultClass + "(ResultRole.SECONDARY, \"" + method.getName() + "\", res.measuredOps, res.getTime(), benchmarkParams.getTimeUnit()));");
             }
             addAuxCounters(writer, "AverageTimeResult", states, method);
 

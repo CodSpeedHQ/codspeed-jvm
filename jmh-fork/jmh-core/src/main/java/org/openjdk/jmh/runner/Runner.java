@@ -290,25 +290,27 @@ public class Runner extends BaseRunner {
         {
             boolean isInstrumented = InstrumentHooks.getInstance().isInstrumented();
             List<BenchmarkListEntry> newBenchmarks = new ArrayList<>();
-            for (BenchmarkListEntry br : benchmarks) {
-                if (isInstrumented) {
-                    // CodSpeed: normalize any mode to AverageTime
-                    if (br.getMode() != Mode.AverageTime) {
-                        out.println("# CodSpeed: normalizing benchmark mode to AverageTime " +
-                            "(was: " + br.getMode() + ") for " + br.getUsername() + ".");
-                    }
-                    newBenchmarks.add(br.cloneWith(Mode.AverageTime));
-                    continue;
-                }
 
+            if (isInstrumented) {
+                // CodSpeed: override all modes to CodSpeed, deduplicate by benchmark name
+                // so that multi-mode declarations (e.g. {Throughput, AverageTime}) run once.
+                Set<String> seen = new LinkedHashSet<>();
+                for (BenchmarkListEntry br : benchmarks) {
+                    if (seen.add(br.getUsername())) {
+                        newBenchmarks.add(br.cloneWith(Mode.CodSpeed));
+                    }
+                }
+            } else {
                 // Standard JMH: expand Mode.All into all concrete modes
-                if (br.getMode() == Mode.All) {
+                for (BenchmarkListEntry br : benchmarks) {
+                    if (br.getMode() != Mode.All) {
+                        newBenchmarks.add(br);
+                        continue;
+                    }
                     for (Mode m : Mode.values()) {
-                        if (m == Mode.All) continue;
+                        if (m == Mode.All || m == Mode.CodSpeed) continue;
                         newBenchmarks.add(br.cloneWith(m));
                     }
-                } else {
-                    newBenchmarks.add(br);
                 }
             }
 

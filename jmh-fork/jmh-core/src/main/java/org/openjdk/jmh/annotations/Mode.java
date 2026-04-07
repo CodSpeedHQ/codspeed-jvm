@@ -80,6 +80,20 @@ public enum Mode {
     SingleShotTime("ss", "Single shot invocation time"),
 
     /**
+     * <p>CodSpeed walltime: captures raw per-iteration ops and duration.</p>
+     *
+     * <p>Runs identically to {@link Mode#AverageTime} but preserves the raw
+     * {@code (ops, durationNs)} pair for each iteration instead of computing
+     * an averaged score. This allows CodSpeed to consume lossless walltime
+     * data without floating-point back-calculation.</p>
+     *
+     * <p>This mode is applied automatically by the runner when CodSpeed
+     * instrumentation is detected. It is not intended for direct use via
+     * {@code @BenchmarkMode}.</p>
+     */
+    CodSpeed("cs", "CodSpeed walltime"),
+
+    /**
      * Meta-mode: all the benchmark modes.
      * This is mostly useful for internal JMH testing.
      */
