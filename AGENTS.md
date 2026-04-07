@@ -116,13 +116,6 @@ The repository combines Maven and Gradle via Gradle's composite build feature:
 4. Update version reference in root `build.gradle.kts` if needed
 5. Test both Gradle and Maven examples to verify compatibility
 
-## Profiling & Debugging
-
-Use `just` commands for quick profiling workflows (see `Justfile`):
-- `just profile-codspeed` — walltime profiling via CodSpeed runner
-- `just profile-perf` — Linux perf + flamegraph (requires Linux + JDK perf integration)
-- `just profile-asprof` — async-profiler flamegraph
-
 ## Notes
 
 - **Submodules**: Repository uses Git submodules (`.gitmodules`). Clone with `--recurse-submodules`.
