@@ -42,6 +42,7 @@ import org.openjdk.jmh.util.Optional;
 
 import io.codspeed.BenchmarkUri;
 import io.codspeed.instrument_hooks.InstrumentHooks;
+import io.codspeed.perf_map_agent.PerfMapAgent;
 import io.codspeed.result.CodSpeedResultCollector;
 
 import java.io.*;
@@ -573,6 +574,17 @@ public class Runner extends BaseRunner {
         etaBeforeBenchmarks(plan);
 
         InstrumentHooks.getInstance().setIntegration("codspeed-jvm", Version.getPlainVersion());
+
+        // CodSpeed: attach perf-map agent to the current VM for @Fork(0) / embedded benchmarks.
+        // Uses a helper process to avoid the JDK 9+ self-attach restriction.
+        if (InstrumentHooks.getInstance().isInstrumented()) {
+            try {
+                PerfMapAgent.attachToCurrentVM("");
+            } catch (Exception e) {
+                // Best effort — agent may not be available on this platform
+            }
+        }
+
         try {
             for (ActionPlan r : plan) {
                 Multimap<BenchmarkParams, BenchmarkResult> res;
@@ -855,6 +867,14 @@ public class Runner extends BaseRunner {
 
         // use supplied jvm args, if given
         command.addAll(benchmark.getJvmArgs());
+
+        // CodSpeed: load perf-map agent for source-aware JIT symbol resolution
+        if (InstrumentHooks.getInstance().isInstrumented()) {
+            String agentPath = PerfMapAgent.getAgentPath();
+            if (agentPath != null) {
+                command.add("-agentpath:" + agentPath);
+            }
+        }
 
         // add profiler JVM commands, if any profiler wants it
         command.addAll(javaOptions);
