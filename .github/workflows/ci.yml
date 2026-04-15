@@ -34,13 +34,9 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
-          cache: 'maven'
-      - name: Setup Maven
-        uses: stCarolas/setup-maven@v5
-        with:
-          maven-version: 3.9.9
+          cache: 'gradle'
       - name: Run CodSpeed tests
-        run: cd jmh-fork && mvn test -pl jmh-core -Dtest="io.codspeed.*.*"
+        run: ./gradlew :jmh-fork:jmh-core:test --tests "io.codspeed.*"
 
   build-and-run-gradle:
     strategy:
