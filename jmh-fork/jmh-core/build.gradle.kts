@@ -5,6 +5,7 @@ val isLinux = org.gradle.internal.os.OperatingSystem.current().isLinux
 
 val nativeDir = file("src/main/java/io/codspeed/instrument_hooks/c")
 val instrumentHooksDir = file("src/main/java/io/codspeed/instrument_hooks/instrument-hooks")
+val perfMapAgentDir = file("src/main/java/io/codspeed/perf_map_agent/c")
 val jniHeaderDir = file("${layout.buildDirectory.get()}/generated/jni-headers")
 val nativeLibDir = layout.buildDirectory.dir("native")
 
@@ -57,10 +58,32 @@ tasks.register<Exec>("compileNative") {
     )
 }
 
-tasks.named("classes") { dependsOn("compileNative") }
+tasks.register<Exec>("compilePerfMapAgent") {
+    description = "Compile perf-map JVMTI agent"
+    onlyIf { isLinux }
+
+    val javaHome = System.getenv("JAVA_HOME") ?: System.getProperty("java.home")
+    val jdkHome = if (File(javaHome).name == "jre") File("$javaHome/..").canonicalPath else javaHome
+    val outputLib = nativeLibDir.get().file("libperf_map_agent.so").asFile
+
+    inputs.files(fileTree(perfMapAgentDir) { include("*.c") })
+    outputs.file(outputLib)
+
+    commandLine(
+        "gcc",
+        "-shared", "-fPIC", "-O2", "-std=c11",
+        "-o", outputLib.absolutePath,
+        "${perfMapAgentDir}/perf_map_agent.c",
+        "-I${jdkHome}/include",
+        "-I${jdkHome}/include/linux",
+        "-lpthread"
+    )
+}
+
+tasks.named("classes") { dependsOn("compileNative", "compilePerfMapAgent") }
 
 tasks.named<ProcessResources>("processResources") {
-    dependsOn("compileNative")
+    dependsOn("compileNative", "compilePerfMapAgent")
     if (isLinux) {
         from(nativeLibDir)
     }
