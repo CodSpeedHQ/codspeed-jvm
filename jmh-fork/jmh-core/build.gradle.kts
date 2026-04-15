@@ -45,7 +45,7 @@ tasks.register<Exec>("compileNative") {
 
     commandLine(
         "gcc",
-        "-shared", "-fPIC", "-O2", "-std=c11",
+        "-shared", "-fPIC", "-O3", "-std=c11",
         "-Wno-format", "-Wno-format-security",
         "-o", outputLib.absolutePath,
         "${nativeDir}/instrument_hooks_jni.c",
@@ -71,7 +71,7 @@ tasks.register<Exec>("compilePerfMapAgent") {
 
     commandLine(
         "gcc",
-        "-shared", "-fPIC", "-O2", "-std=c11",
+        "-shared", "-fPIC", "-O3", "-std=c11",
         "-o", outputLib.absolutePath,
         "${perfMapAgentDir}/perf_map_agent.c",
         "-I${jdkHome}/include",
