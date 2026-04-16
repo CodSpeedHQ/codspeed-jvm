@@ -1,4 +1,8 @@
 subprojects {
+    if (name.startsWith("native-")) {
+        return@subprojects
+    }
+
     apply(plugin = "java-library")
     apply(plugin = "maven-publish")
 

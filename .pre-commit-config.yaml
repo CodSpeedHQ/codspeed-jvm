@@ -1,4 +1,4 @@
-exclude: ^jmh-fork/(?!jmh-core/src/main/java/io/codspeed/)
+exclude: ^jmh-fork/(?!jmh-core/(src/main/java/io/codspeed/|native-[a-z-]+/src/main/c/))
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
@@ -20,4 +20,4 @@ repos:
     rev: v0.6.1
     hooks:
       - id: clang-format
-        files: jmh-fork/jmh-core/src/main/java/io/codspeed/instrument_hooks/c/.*\.(c|h)$
+        files: jmh-fork/jmh-core/native-[a-z-]+/src/main/c/.*\.(c|h)$

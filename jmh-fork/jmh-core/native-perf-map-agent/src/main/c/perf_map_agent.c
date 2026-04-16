@@ -8,8 +8,9 @@
  *   java -agentpath:libperf_map_agent.so[=file=<path>] ...
  *
  * Output format (standard perf map):
- *   With source path: <hex_addr> <hex_size> <absolute_source_path>::<class.name>.<method>
- *   Without source:   <hex_addr> <hex_size> <class.name>.<method>
+ *   With source path: <hex_addr> <hex_size>
+ * <absolute_source_path>::<class.name>.<method> Without source:   <hex_addr>
+ * <hex_size> <class.name>.<method>
  */
 
 #define _GNU_SOURCE
@@ -28,7 +29,7 @@
 #include <unistd.h>
 
 /* -------------------------------------------------------------------------- */
-/* Source file cache                                                           */
+/* Source file cache */
 /* -------------------------------------------------------------------------- */
 
 typedef struct cache_entry {
@@ -130,8 +131,8 @@ static int should_skip_dir(const char *name) {
  * Search for a file whose path ends with `suffix` under `dir`.
  * Returns 1 if found (result written to `out`), 0 otherwise.
  */
-static int find_file_recursive(const char *dir, const char *suffix,
-                               char *out, size_t out_size) {
+static int find_file_recursive(const char *dir, const char *suffix, char *out,
+                               size_t out_size) {
   DIR *d = opendir(dir);
   if (!d) {
     return 0;
@@ -177,7 +178,7 @@ static int find_file_recursive(const char *dir, const char *suffix,
 }
 
 /* -------------------------------------------------------------------------- */
-/* Source file resolution                                                      */
+/* Source file resolution */
 /* -------------------------------------------------------------------------- */
 
 /*
@@ -244,7 +245,7 @@ static int open_map_file(const char *path) {
 }
 
 static void write_entry(const void *code_addr, int code_size,
-                         const char *symbol) {
+                        const char *symbol) {
   pthread_mutex_lock(&map_lock);
   if (!map_file) {
     pthread_mutex_unlock(&map_lock);
@@ -302,7 +303,8 @@ static void build_relative_path(const char *class_sig, const char *source_file,
   if (source_file && source_file[0] != '\0') {
     /* Use package prefix + source file name from debug info */
     if (last_slash) {
-      size_t prefix_len = (size_t)(last_slash - start) + 1; /* include the '/' */
+      size_t prefix_len =
+          (size_t)(last_slash - start) + 1; /* include the '/' */
       if (prefix_len >= out_size) {
         prefix_len = out_size - 1;
       }
@@ -520,8 +522,8 @@ static jint agent_init(JavaVM *jvm, char *options, int is_attach) {
                                      JVMTI_EVENT_COMPILED_METHOD_LOAD, NULL);
   (*jvmti)->SetEventNotificationMode(jvmti, JVMTI_ENABLE,
                                      JVMTI_EVENT_DYNAMIC_CODE_GENERATED, NULL);
-  (*jvmti)->SetEventNotificationMode(jvmti, JVMTI_ENABLE,
-                                     JVMTI_EVENT_VM_DEATH, NULL);
+  (*jvmti)->SetEventNotificationMode(jvmti, JVMTI_ENABLE, JVMTI_EVENT_VM_DEATH,
+                                     NULL);
 
   /* Open the perf map file */
   if (open_map_file(custom_map_path) != 0) {
