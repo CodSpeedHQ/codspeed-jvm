@@ -68,11 +68,10 @@ public class PerfMapAgentTest {
       assertFalse(
           "Should not emit guessed java/... .java:: source paths", hasGuessedJdkSourcePath);
 
-      // Missing-source classes should keep the same shape with an empty source-path slot.
+      // Missing-source classes should omit the source-path slot entirely.
       boolean hasRawJdkFallback =
-          symbols.stream().anyMatch(s -> s.matches("^::java\\.lang\\.String\\.hashCode$"));
-      assertTrue(
-          "Should contain fallback symbol with empty source-path slot", hasRawJdkFallback);
+          symbols.stream().anyMatch(s -> s.matches("^java\\.lang\\.String\\.hashCode$"));
+      assertTrue("Should contain fallback symbol without a source path", hasRawJdkFallback);
     } finally {
       Files.deleteIfExists(mapFile);
       cleanupLib(agentLib);

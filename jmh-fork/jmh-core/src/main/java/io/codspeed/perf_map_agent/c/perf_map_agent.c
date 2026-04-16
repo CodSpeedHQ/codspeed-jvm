@@ -9,7 +9,7 @@
  *
  * Output format (standard perf map):
  *   With source path: <hex_addr> <hex_size> <absolute_source_path>::<class.name>.<method>
- *   Without source:   <hex_addr> <hex_size> ::<class.name>.<method>
+ *   Without source:   <hex_addr> <hex_size> <class.name>.<method>
  */
 
 #define _GNU_SOURCE
@@ -411,7 +411,7 @@ static void JNICALL on_compiled_method_load(jvmtiEnv *jvmti, jmethodID method,
     snprintf(symbol, sizeof(symbol), "%s::%s.%s", absolute_path, dotted_class,
              method_name);
   } else {
-    snprintf(symbol, sizeof(symbol), "::%s.%s", dotted_class, method_name);
+    snprintf(symbol, sizeof(symbol), "%s.%s", dotted_class, method_name);
   }
 
   write_entry(code_addr, code_size, symbol);
