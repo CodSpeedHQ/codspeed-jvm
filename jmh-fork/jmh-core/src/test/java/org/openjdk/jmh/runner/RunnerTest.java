@@ -68,7 +68,7 @@ public class RunnerTest {
                 Utils.getCurrentJvm(), Collections.<String>emptyList(),
                 System.getProperty("java.version"), System.getProperty("java.vm.name"), System.getProperty("java.vm.version"), Version.getPlainVersion(),
                 TimeValue.days(1));
-        List<String> command = blade.getForkedMainCommand(bp, Collections.<ExternalProfiler>emptyList(), DUMMY_HOST, DUMMY_PORT);
+        List<String> command = blade.getForkedMainCommand(bp, Collections.<ExternalProfiler>emptyList(), DUMMY_HOST, DUMMY_PORT, false);
 
         // expecting 1 compile command file
         List<String> files = CompilerHints.getCompileCommandFiles(command);
@@ -100,7 +100,7 @@ public class RunnerTest {
                 Utils.getCurrentJvm(), Collections.singletonList(CompilerHints.XX_COMPILE_COMMAND_FILE + tempHints),
                 System.getProperty("java.version"), System.getProperty("java.vm.name"), System.getProperty("java.vm.version"), Version.getPlainVersion(),
                 TimeValue.days(1));
-        List<String> command = blade.getForkedMainCommand(bp, Collections.<ExternalProfiler>emptyList(), DUMMY_HOST, DUMMY_PORT);
+        List<String> command = blade.getForkedMainCommand(bp, Collections.<ExternalProfiler>emptyList(), DUMMY_HOST, DUMMY_PORT, false);
 
         // expecting 1 compile command file
         List<String> files = CompilerHints.getCompileCommandFiles(command);
@@ -137,7 +137,7 @@ public class RunnerTest {
                 Arrays.asList(CompilerHints.XX_COMPILE_COMMAND_FILE + tempHints1, CompilerHints.XX_COMPILE_COMMAND_FILE + tempHints2),
                 System.getProperty("java.version"), System.getProperty("java.vm.name"), System.getProperty("java.vm.version"), Version.getPlainVersion(),
                 TimeValue.days(1));
-        List<String> command = blade.getForkedMainCommand(bp, Collections.<ExternalProfiler>emptyList(), DUMMY_HOST, DUMMY_PORT);
+        List<String> command = blade.getForkedMainCommand(bp, Collections.<ExternalProfiler>emptyList(), DUMMY_HOST, DUMMY_PORT, false);
 
         // expecting 1 compile command file
         List<String> files = CompilerHints.getCompileCommandFiles(command);

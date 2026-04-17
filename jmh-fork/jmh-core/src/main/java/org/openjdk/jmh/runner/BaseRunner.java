@@ -50,6 +50,17 @@ import java.util.concurrent.TimeUnit;
  */
 abstract class BaseRunner {
 
+    /**
+     * System property the parent Runner sets on forked JVMs whose iterations are warmup-only
+     * (results discarded). The forked process reads it to suppress CodSpeed marker emission so the
+     * runner only sees real measurement regions.
+     */
+    static final String CODSPEED_WARMUP_FORK_PROP = "io.codspeed.warmupFork";
+
+    static boolean isWarmupFork() {
+        return "true".equals(System.getProperty(CODSPEED_WARMUP_FORK_PROP));
+    }
+
     private long projectedTotalTime;
     private long projectedRunningTime;
     private long actualRunningTime;
@@ -291,7 +302,17 @@ abstract class BaseRunner {
 
             boolean isFirstIteration = (benchParams.getWarmup().getCount() == 0) && (i == 1);
             boolean isLastIteration = (i == mp.getCount());
+
+            long startTs = InstrumentHooks.currentTimestamp();
             IterationResult ir = handler.runIteration(benchParams, mp, isFirstIteration, isLastIteration);
+            long endTs = InstrumentHooks.currentTimestamp();
+
+            if (!isWarmupFork()) {
+                InstrumentHooks hooks = InstrumentHooks.getInstance();
+                int pid = (int) ProcessHandle.current().pid();
+                hooks.addMarker(pid, InstrumentHooks.MARKER_TYPE_BENCHMARK_START, startTs);
+                hooks.addMarker(pid, InstrumentHooks.MARKER_TYPE_BENCHMARK_END, endTs);
+            }
             out.iterationResult(benchParams, mp, i, ir);
 
             allMeasurement += ir.getMetadata().getAllOps();

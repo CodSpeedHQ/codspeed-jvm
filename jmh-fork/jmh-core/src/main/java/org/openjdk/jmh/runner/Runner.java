@@ -681,7 +681,7 @@ public class Runner extends BaseRunner {
 
             for (int i = 0; i < totalForks; i++) {
                 boolean warmupFork = (i < warmupForkCount);
-                List<String> forkedString  = getForkedMainCommand(params, profilers, server.getHost(), server.getPort());
+                List<String> forkedString  = getForkedMainCommand(params, profilers, server.getHost(), server.getPort(), warmupFork);
 
                 etaBeforeBenchmark();
 
@@ -844,11 +844,18 @@ public class Runner extends BaseRunner {
     }
 
     /**
-     * @param host host VM host
-     * @param port host VM port
-     * @return
+     * Build the command line used to launch a forked benchmark JVM.
+     *
+     * @param benchmark   benchmark parameters for the current run
+     * @param profilers   external profilers contributing extra JVM args
+     * @param host        host VM host
+     * @param port        host VM port
+     * @param warmupFork  true for warmup-only forks whose results are discarded; causes
+     *                    {@code -D}{@value BaseRunner#CODSPEED_WARMUP_FORK_PROP}{@code =true}
+     *                    to be added so the forked JVM suppresses CodSpeed marker emission
+     * @return            the full argv, starting with the JVM executable
      */
-    List<String> getForkedMainCommand(BenchmarkParams benchmark, List<ExternalProfiler> profilers, String host, int port) {
+    List<String> getForkedMainCommand(BenchmarkParams benchmark, List<ExternalProfiler> profilers, String host, int port, boolean warmupFork) {
         // Poll profilers for options
         List<String> javaInvokeOptions = new ArrayList<>();
         List<String> javaOptions = new ArrayList<>();
@@ -874,6 +881,10 @@ public class Runner extends BaseRunner {
             if (agentPath != null) {
                 command.add("-agentpath:" + agentPath);
             }
+        }
+
+        if (warmupFork) {
+            command.add("-D" + CODSPEED_WARMUP_FORK_PROP + "=true");
         }
 
         // add profiler JVM commands, if any profiler wants it
