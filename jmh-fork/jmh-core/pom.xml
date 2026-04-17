@@ -119,6 +119,7 @@ questions.
                             <excludes>
                                 <exclude>src/main/java/io/codspeed/**</exclude>
                                 <exclude>src/test/java/io/codspeed/**</exclude>
+                                <exclude>native-*/**</exclude>
                             </excludes>
                         </configuration>
                     </execution>
