@@ -8,6 +8,11 @@ version = "1.0-SNAPSHOT"
 
 jmh {
     jmhVersion.set("0.1.0")
+
+    // Force a System.gc() between iterations so heap state is reset before each
+    // measurement starts. Without this, a GC pause can land inside the measurement
+    // window and show up as a spurious regression in CI.
+    forceGC = true
 }
 
 sourceSets {
