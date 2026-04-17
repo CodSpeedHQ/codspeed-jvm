@@ -63,7 +63,11 @@ public class InstrumentHooks {
   public static final int FEATURE_DISABLE_CALLGRIND_MARKERS = 0;
 
   // Static methods (no instance needed)
-  public static native long currentTimestamp();
+  public static long currentTimestamp() {
+    return nativeAvailable ? nativeCurrentTimestamp() : 0L;
+  }
+
+  private static native long nativeCurrentTimestamp();
 
   public static native void setFeature(int feature, boolean enabled);
 

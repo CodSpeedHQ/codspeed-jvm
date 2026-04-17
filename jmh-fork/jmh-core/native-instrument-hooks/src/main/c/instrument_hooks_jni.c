@@ -16,7 +16,7 @@ static void throw_runtime_exception(JNIEnv *env, const char *msg) {
 // --- Static methods ---
 
 JNIEXPORT jlong JNICALL
-Java_io_codspeed_instrument_1hooks_InstrumentHooks_currentTimestamp(
+Java_io_codspeed_instrument_1hooks_InstrumentHooks_nativeCurrentTimestamp(
     JNIEnv *env, jclass cls) {
   (void)env;
   (void)cls;
