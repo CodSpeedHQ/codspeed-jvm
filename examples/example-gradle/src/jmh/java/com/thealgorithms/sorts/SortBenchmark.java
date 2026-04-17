@@ -13,7 +13,7 @@ import org.openjdk.jmh.annotations.*;
 @Fork(1)
 public class SortBenchmark {
 
-  @Param({"100", "1000", "10000"})
+  @Param({"10000"})
   private int size;
 
   private Integer[] data;

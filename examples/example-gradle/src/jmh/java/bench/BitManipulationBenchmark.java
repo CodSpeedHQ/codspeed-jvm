@@ -13,7 +13,7 @@ import org.openjdk.jmh.annotations.*;
 @Fork(1)
 public class BitManipulationBenchmark {
 
-  @Param({"0", "42", "255", "1024", "65535"})
+  @Param({"65535"})
   private int bitValue;
 
   @Benchmark

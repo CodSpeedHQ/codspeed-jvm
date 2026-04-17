@@ -26,7 +26,7 @@ public class RegexBenchmark {
   // Nested quantifiers: (a+)+ applied to a string of 'a's followed by a non-matching char.
   private static final String BACKTRACK_PATTERN = "^(a+)+b$";
 
-  @Param({"20", "24"})
+  @Param({"24"})
   private int backtrackLength;
 
   private String scanInput;

@@ -1,6 +1,7 @@
 package bench;
 
 import com.thealgorithms.backtracking.*;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.*;
@@ -8,16 +9,13 @@ import org.openjdk.jmh.infra.Blackhole;
 
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
-@Warmup(iterations = 1, time = 1)
-@Measurement(iterations = 3, time = 1)
-@Fork(1)
 public class BacktrackingBenchmark {
 
   // -- N-Queens --
 
   @State(Scope.Benchmark)
   public static class NQueensState {
-    @Param({"4", "5", "6", "7", "8"})
+    @Param({"8"})
     public int nQueens;
   }
 
@@ -30,7 +28,7 @@ public class BacktrackingBenchmark {
 
   @State(Scope.Benchmark)
   public static class ParenthesesState {
-    @Param({"3", "4", "5", "6"})
+    @Param({"6"})
     public int nParens;
   }
 
@@ -43,34 +41,46 @@ public class BacktrackingBenchmark {
 
   @State(Scope.Benchmark)
   public static class CombinationsState {
-    @Param({"5", "6", "7", "8", "9"})
+    @Param({"9"})
     public int nCombinations;
+
+    public Integer[] arr;
+
+    @Setup(Level.Trial)
+    public void setup() {
+      arr = new Integer[nCombinations];
+      for (int i = 0; i < nCombinations; i++) {
+        arr[i] = i;
+      }
+    }
   }
 
   @Benchmark
   public void generateCombinations(CombinationsState state, Blackhole bh) {
-    Integer[] arr = new Integer[state.nCombinations];
-    for (int i = 0; i < state.nCombinations; i++) {
-      arr[i] = i;
-    }
-    bh.consume(Combination.combination(arr, 3));
+    bh.consume(Combination.combination(state.arr, 3));
   }
 
   // -- Permutations --
 
   @State(Scope.Benchmark)
   public static class PermutationsState {
-    @Param({"3", "4", "5", "6", "7"})
+    @Param({"7"})
     public int nPermutations;
+
+    public Integer[] arr;
+
+    @Setup(Level.Trial)
+    public void setup() {
+      arr = new Integer[nPermutations];
+      for (int i = 0; i < nPermutations; i++) {
+        arr[i] = i;
+      }
+    }
   }
 
   @Benchmark
   public void permutations(PermutationsState state, Blackhole bh) {
-    Integer[] arr = new Integer[state.nPermutations];
-    for (int i = 0; i < state.nPermutations; i++) {
-      arr[i] = i;
-    }
-    bh.consume(Permutation.permutation(arr));
+    bh.consume(Permutation.permutation(state.arr));
   }
 
   // -- Sudoku Solver --
@@ -105,16 +115,22 @@ public class BacktrackingBenchmark {
 
   @State(Scope.Benchmark)
   public static class SubsequencesState {
-    @Param({"8", "10", "12"})
+    @Param({"12"})
     public int nSubsequences;
+
+    public List<Integer> seq;
+
+    @Setup(Level.Trial)
+    public void setup() {
+      seq = new ArrayList<>(nSubsequences);
+      for (int i = 0; i < nSubsequences; i++) {
+        seq.add(i);
+      }
+    }
   }
 
   @Benchmark
   public void generateSubsequences(SubsequencesState state, Blackhole bh) {
-    List<Integer> seq = new java.util.ArrayList<>();
-    for (int i = 0; i < state.nSubsequences; i++) {
-      seq.add(i);
-    }
-    bh.consume(SubsequenceFinder.generateAll(seq));
+    bh.consume(SubsequenceFinder.generateAll(state.seq));
   }
 }

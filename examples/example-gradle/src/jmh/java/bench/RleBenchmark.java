@@ -14,7 +14,7 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 @Fork(1)
 public class RleBenchmark {
 
-  @Param({"1024", "65536"})
+  @Param({"65536"})
   private int size;
 
   private byte[] rawData;

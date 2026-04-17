@@ -15,7 +15,7 @@ public class DynamicProgrammingBenchmark {
 
   @State(Scope.Benchmark)
   public static class FibonacciState {
-    @Param({"10", "20", "30", "40"})
+    @Param({"30"})
     public int fibN;
   }
 
@@ -38,7 +38,7 @@ public class DynamicProgrammingBenchmark {
 
   @State(Scope.Benchmark)
   public static class KnapsackState {
-    @Param({"10", "15", "20"})
+    @Param({"20"})
     public int knapsackSize;
 
     public int[] knapsackWeights;
@@ -64,7 +64,7 @@ public class DynamicProgrammingBenchmark {
 
   @State(Scope.Benchmark)
   public static class EditDistanceState {
-    @Param({"kitten", "saturday"})
+    @Param({"saturday"})
     public String editWord1;
   }
 
@@ -77,7 +77,7 @@ public class DynamicProgrammingBenchmark {
 
   @State(Scope.Benchmark)
   public static class LevenshteinState {
-    @Param({"kitten sitting", "saturday sunday"})
+    @Param({"saturday sunday"})
     public String levenshteinPair;
   }
 
@@ -91,7 +91,7 @@ public class DynamicProgrammingBenchmark {
 
   @State(Scope.Benchmark)
   public static class LisState {
-    @Param({"10", "50", "100"})
+    @Param({"100"})
     public int lisSize;
 
     public int[] lisArray;
@@ -115,7 +115,7 @@ public class DynamicProgrammingBenchmark {
 
   @State(Scope.Benchmark)
   public static class CoinChangeState {
-    @Param({"50", "100", "200"})
+    @Param({"200"})
     public int coinAmount;
   }
 
@@ -130,7 +130,7 @@ public class DynamicProgrammingBenchmark {
 
   @State(Scope.Benchmark)
   public static class SubsetSumState {
-    @Param({"10", "15", "20"})
+    @Param({"20"})
     public int subsetSize;
 
     public int[] subsetArr;
