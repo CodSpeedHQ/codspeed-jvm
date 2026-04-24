@@ -148,16 +148,17 @@ abstract class BaseRunner {
     }
 
     private void doSingle(BenchmarkParams params, ActionMode mode, IterationResultAcceptor acceptor) {
+        boolean isWarmup = !mode.doMeasurement() || isWarmupFork();
         try {
             switch (mode) {
                 case WARMUP: {
-                    runBenchmark(params, null);
+                    runBenchmark(params, null, isWarmup);
                     out.println("");
                     break;
                 }
                 case WARMUP_MEASUREMENT:
                 case MEASUREMENT: {
-                    runBenchmark(params, acceptor);
+                    runBenchmark(params, acceptor, isWarmup);
                     break;
                 }
                 default:
@@ -248,11 +249,11 @@ abstract class BaseRunner {
         return String.format("%s%02d:%02d:%02d", (days > 0) ? days + " days, " : "", hrs, mins, secs);
     }
 
-    void runBenchmark(BenchmarkParams benchParams, IterationResultAcceptor acceptor) {
+    void runBenchmark(BenchmarkParams benchParams, IterationResultAcceptor acceptor, boolean isWarmup) {
         BenchmarkHandler handler = null;
         try {
             handler = new BenchmarkHandler(out, options, benchParams);
-            runBenchmark(benchParams, handler, acceptor);
+            runBenchmark(benchParams, handler, acceptor, isWarmup);
         } catch (BenchmarkException be) {
             throw be;
         } catch (Throwable ex) {
@@ -264,7 +265,7 @@ abstract class BaseRunner {
         }
     }
 
-    protected void runBenchmark(BenchmarkParams benchParams, BenchmarkHandler handler, IterationResultAcceptor acceptor) {
+    protected void runBenchmark(BenchmarkParams benchParams, BenchmarkHandler handler, IterationResultAcceptor acceptor, boolean isWarmup) {
         long warmupTime = System.currentTimeMillis();
 
         long allWarmup = 0;
@@ -307,7 +308,7 @@ abstract class BaseRunner {
             IterationResult ir = handler.runIteration(benchParams, mp, isFirstIteration, isLastIteration);
             long endTs = InstrumentHooks.currentTimestamp();
 
-            if (!isWarmupFork()) {
+            if (!isWarmup) {
                 InstrumentHooks hooks = InstrumentHooks.getInstance();
                 int pid = (int) ProcessHandle.current().pid();
                 hooks.addMarker(pid, InstrumentHooks.MARKER_TYPE_BENCHMARK_START, startTs);
