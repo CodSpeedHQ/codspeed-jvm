@@ -1,6 +1,4 @@
-# CLAUDE.md
-
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+# AGENTS.md
 
 ## Project Overview
 
@@ -88,9 +86,12 @@ The repository combines Maven and Gradle via Gradle's composite build feature:
 
 ### CodSpeed Integration Points
 
-1. **Walltime Collection**: Modified JMH fork in `jmh-fork/jmh-core` collects walltime metrics during benchmark execution
-2. **JNI Bindings**: Native code hooks (C) for precise instrumentation in `jmh-fork/jmh-core/src/main/java/io/codspeed/`
-3. **CI Integration**: GitHub Actions workflows trigger CodSpeed measurement runs on `codspeed-macro` runners
+1. **Walltime Collection**: Modified JMH fork in `jmh-fork/jmh-core` collects walltime metrics during benchmark execution. Java-side bindings live in `jmh-fork/jmh-core/src/main/java/io/codspeed/`.
+2. **Native libraries**: Bundled under `jmh-fork/jmh-core/`:
+   - `native-instrument-hooks/`: shared CodSpeed instrument-hooks library (Zig/C) used to talk to the CodSpeed runner
+   - `native-perf-map-agent/`: perf map agent used for symbolization
+3. **CodSpeed mode**: When running under CodSpeed (`isInstrumented`), the JMH fork normalizes the benchmark mode to `AverageTime` and emits raw ops/duration per iteration so the runner can compute its own statistics.
+4. **CI Integration**: GitHub Actions workflows trigger CodSpeed measurement runs on `codspeed-macro` runners
 
 ### Benchmark Architecture
 
