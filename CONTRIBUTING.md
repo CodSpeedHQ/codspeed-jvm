@@ -1,11 +1,11 @@
 # Contributing
 
-## Bumping the JMH fork version
+## Release
 
-The JMH fork is published under group ID `io.codspeed.jmh`. To bump the version across all modules:
+To create a release, run `scripts/release.sh <new_version>` from the main
+branch. This script will:
 
-```bash
-cd jmh-fork && mvn versions:set -DnewVersion=x.y.z
-```
-
-This updates all `pom.xml` files in the multi-module project. After bumping, also update the version reference in `build.gradle.kts`.
+1. Automatically update the version in all relevant files
+2. Create a commit with the version changes
+3. Generate the `CHANGELOG.md` (skipped for prereleases)
+4. Tag and create the release on GitHub
