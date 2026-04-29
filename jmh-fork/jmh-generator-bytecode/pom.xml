@@ -30,7 +30,7 @@ questions.
     <parent>
         <groupId>io.codspeed.jmh</groupId>
         <artifactId>jmh-parent</artifactId>
-        <version>0.1.0</version>
+        <version>0.1.0-alpha</version>
     </parent>
 
     <name>JMH Generators: Bytecode</name>

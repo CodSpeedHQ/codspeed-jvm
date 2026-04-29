@@ -30,7 +30,7 @@ questions.
     <groupId>io.codspeed.jmh</groupId>
     <artifactId>jmh-parent</artifactId>
     <packaging>pom</packaging>
-    <version>0.1.0</version>
+    <version>0.1.0-alpha</version>
     <name>Java Microbenchmark Harness Parent</name>
 
     <description>
