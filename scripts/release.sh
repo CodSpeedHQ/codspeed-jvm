@@ -33,6 +33,13 @@ if [[ ! "$VERSION_NO_V" =~ -alpha ]]; then
     fi
 fi
 
+# Check that mvn is installed
+if ! command -v mvn >/dev/null 2>&1; then
+    echo "error: mvn is not installed" >&2
+    echo "Install Maven first: https://maven.apache.org/install.html" >&2
+    exit 1
+fi
+
 # Check that GITHUB_TOKEN is set
 if [ -z "${GITHUB_TOKEN:-}" ]; then
     echo "GITHUB_TOKEN is not set. Trying to fetch it from gh"
