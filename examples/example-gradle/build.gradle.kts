@@ -1,3 +1,5 @@
+import org.gradle.internal.os.OperatingSystem
+
 plugins {
     java
     id("me.champeau.jmh") version "0.7.2"
@@ -30,8 +32,15 @@ jmh {
         // regex passed to JMH, so multiple entries collapse to one pattern with
         // literal commas and match nothing. Use a single alternation instead.
         includes.set(listOf(
-            ".*(SleepBenchmark|BacktrackingBenchmark|FibBenchmark).*",
+            ".*(SleepBenchmark|BacktrackingBenchmark|FibBenchmark|FibFlamegraphBenchmark).*",
         ))
+    }
+
+    // FibFlamegraphBenchmark exists only to exercise the macOS flamegraph
+    // pipeline on codspeed-macro runners. Skip it on Linux/Windows so the
+    // cross-platform jobs don't run a redundant fib variant.
+    if (!OperatingSystem.current().isMacOsX) {
+        excludes.add(".*FibFlamegraphBenchmark.*")
     }
 }
 
