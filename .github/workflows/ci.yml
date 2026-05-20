@@ -102,6 +102,25 @@ jobs:
           mode: walltime
           run: ./gradlew :examples:example-gradle:jmh
 
+  walltime-benchmarks-flamegraph:
+    runs-on: codspeed-macro
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: 'gradle'
+      - name: Run FibFlamegraphBenchmark
+        uses: CodSpeedHQ/action@main
+        env:
+          CODSPEED_BENCH_GROUP: flamegraph
+        with:
+          mode: walltime
+          run: ./gradlew :examples:example-gradle:jmh
+
   check:
     runs-on: ubuntu-latest
     if: always()
@@ -111,6 +130,7 @@ jobs:
       - build-and-run-gradle
       - build-and-run-maven
       - walltime-benchmarks
+      - walltime-benchmarks-flamegraph
     steps:
       - uses: re-actors/alls-green@release/v1
         with:

@@ -29,9 +29,17 @@ jmh {
         // me.champeau.jmh joins `includes` with commas into a single positional
         // regex passed to JMH, so multiple entries collapse to one pattern with
         // literal commas and match nothing. Use a single alternation instead.
-        includes.set(listOf(
-            ".*(SleepBenchmark|BacktrackingBenchmark|FibBenchmark).*",
-        ))
+        //
+        // CODSPEED_BENCH_GROUP=flamegraph selects the macOS-only
+        // FibFlamegraphBenchmark used to exercise the flamegraph pipeline.
+        // Default is the regular benchmark set.
+        // TODO(COD-2715): Run all benches on MacOS
+        val pattern = if (System.getenv("CODSPEED_BENCH_GROUP") == "flamegraph") {
+            ".*FibFlamegraphBenchmark.*"
+        } else {
+            ".*(SleepBenchmark|BacktrackingBenchmark|FibBenchmark).*"
+        }
+        includes.set(listOf(pattern))
     }
 }
 
