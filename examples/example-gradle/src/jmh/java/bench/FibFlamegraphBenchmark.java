@@ -1,0 +1,27 @@
+package bench;
+
+import java.util.concurrent.TimeUnit;
+import org.openjdk.jmh.annotations.*;
+
+/**
+ * macOS-only benchmark whose recursion shape produces an easily-recognisable flamegraph. Gated to
+ * macOS via Gradle excludes in {@code build.gradle.kts}.
+ */
+@BenchmarkMode(Mode.AverageTime)
+@OutputTimeUnit(TimeUnit.NANOSECONDS)
+@State(Scope.Benchmark)
+public class FibFlamegraphBenchmark {
+
+  @Param({"35"})
+  private int n;
+
+  @Benchmark
+  public long fib() {
+    return fib(n);
+  }
+
+  private static long fib(int n) {
+    if (n <= 1) return n;
+    return fib(n - 1) + fib(n - 2);
+  }
+}
