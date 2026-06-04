@@ -7,7 +7,7 @@ group = "io.codspeed"
 version = "1.0-SNAPSHOT"
 
 jmh {
-    jmhVersion.set("0.1.1")
+    jmhVersion.set("0.2.0")
 
     benchmarkMode.set(listOf("avgt"))
     timeUnit.set("ns")
