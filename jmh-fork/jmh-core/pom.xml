@@ -69,6 +69,10 @@ questions.
             <artifactId>gson</artifactId>
             <version>2.11.0</version>
         </dependency>
+        <dependency>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm</artifactId>
+        </dependency>
     </dependencies>
 
     <properties>
