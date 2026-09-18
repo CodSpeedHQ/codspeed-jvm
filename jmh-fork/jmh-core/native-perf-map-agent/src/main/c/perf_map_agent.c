@@ -2,7 +2,7 @@
  * perf_map_agent.c — JVMTI agent that writes /tmp/perf-<pid>.map
  *
  * Hooks CompiledMethodLoad events and writes perf map entries with
- * absolute source file paths resolved via git root discovery.
+ * absolute source file paths resolved against the enclosing git repository.
  *
  * Usage:
  *   java -agentpath:libperf_map_agent.so[=file=<path>] ...
@@ -74,7 +74,6 @@ static const char *cache_insert(const char *key, const char *value) {
 /* -------------------------------------------------------------------------- */
 
 static char git_root[PATH_MAX];
-static pthread_once_t git_root_once = PTHREAD_ONCE_INIT;
 
 static void find_git_root(void) {
   char cwd[PATH_MAX];
@@ -113,8 +112,22 @@ static void find_git_root(void) {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Recursive file search                                                      */
+/* Source file index                                                          */
 /* -------------------------------------------------------------------------- */
+
+#define SOURCE_INDEX_BUCKETS 4096
+
+typedef struct index_entry {
+  char *path;
+  struct index_entry *next;
+} index_entry_t;
+typedef struct {
+  index_entry_t *head;
+  index_entry_t *tail;
+} index_bucket_t;
+
+static index_bucket_t source_index[SOURCE_INDEX_BUCKETS];
+static pthread_once_t source_index_once = PTHREAD_ONCE_INIT;
 
 static int should_skip_dir(const char *name) {
   if (name[0] == '.') {
@@ -127,15 +140,46 @@ static int should_skip_dir(const char *name) {
   return 0;
 }
 
-/*
- * Search for a file whose path ends with `suffix` under `dir`.
- * Returns 1 if found (result written to `out`), 0 otherwise.
- */
-static int find_file_recursive(const char *dir, const char *suffix, char *out,
-                               size_t out_size) {
+static uint32_t hash_basename(const char *name) {
+  uint32_t h = 2166136261u;
+  for (; *name != '\0'; name++) {
+    h ^= (unsigned char)*name;
+    h *= 16777619u;
+  }
+  return h & (SOURCE_INDEX_BUCKETS - 1);
+}
+
+static const char *path_basename(const char *path) {
+  const char *slash = strrchr(path, '/');
+  return slash ? slash + 1 : path;
+}
+
+static void index_insert(const char *abs_path) {
+  index_entry_t *e = malloc(sizeof(*e));
+  if (!e) {
+    return;
+  }
+  e->path = strdup(abs_path);
+  if (!e->path) {
+    free(e);
+    return;
+  }
+
+  index_bucket_t *bucket =
+      &source_index[hash_basename(path_basename(abs_path))];
+  e->next = NULL;
+  if (bucket->tail) {
+    bucket->tail->next = e;
+  } else {
+    bucket->head = e;
+  }
+  bucket->tail = e;
+}
+
+static void index_dir(const char *dir) {
   DIR *d = opendir(dir);
   if (!d) {
-    return 0;
+    return;
   }
 
   struct dirent *ent;
@@ -147,34 +191,65 @@ static int find_file_recursive(const char *dir, const char *suffix, char *out,
     char full_path[PATH_MAX];
     snprintf(full_path, sizeof(full_path), "%s/%s", dir, ent->d_name);
 
-    struct stat st;
-    if (stat(full_path, &st) != 0) {
-      continue;
-    }
-
-    if (S_ISDIR(st.st_mode)) {
-      if (should_skip_dir(ent->d_name)) {
+    int is_dir = (ent->d_type == DT_DIR);
+    int is_reg = (ent->d_type == DT_REG);
+    /* Follow symlinks and handle filesystems that do not populate d_type. */
+    if (!is_dir && !is_reg) {
+      struct stat st;
+      if (stat(full_path, &st) != 0) {
         continue;
       }
-      if (find_file_recursive(full_path, suffix, out, out_size)) {
-        closedir(d);
-        return 1;
-      }
-    } else if (S_ISREG(st.st_mode)) {
-      size_t full_len = strlen(full_path);
-      size_t suffix_len = strlen(suffix);
-      if (full_len >= suffix_len &&
-          strcmp(full_path + full_len - suffix_len, suffix) == 0) {
-        strncpy(out, full_path, out_size - 1);
-        out[out_size - 1] = '\0';
-        closedir(d);
-        return 1;
-      }
+      is_dir = S_ISDIR(st.st_mode);
+      is_reg = S_ISREG(st.st_mode);
+    }
+
+    if (is_dir && !should_skip_dir(ent->d_name)) {
+      index_dir(full_path);
+    } else if (is_reg) {
+      index_insert(full_path);
     }
   }
 
   closedir(d);
-  return 0;
+}
+
+static void source_index_init(void) {
+  find_git_root();
+  index_dir(git_root);
+}
+
+static void index_free(void) {
+  for (size_t i = 0; i < SOURCE_INDEX_BUCKETS; i++) {
+    index_bucket_t *bucket = &source_index[i];
+    index_entry_t *e = bucket->head;
+    while (e) {
+      index_entry_t *next = e->next;
+      free(e->path);
+      free(e);
+      e = next;
+    }
+    bucket->head = NULL;
+    bucket->tail = NULL;
+  }
+}
+
+/*
+ * Find an indexed file whose absolute path ends with "/<relative_path>".
+ * Returns NULL when no indexed file matches.
+ */
+static const char *index_find(const char *relative_path) {
+  char suffix[PATH_MAX];
+  snprintf(suffix, sizeof(suffix), "/%s", relative_path);
+  size_t suffix_len = strlen(suffix);
+
+  uint32_t bucket = hash_basename(path_basename(relative_path));
+  for (index_entry_t *e = source_index[bucket].head; e; e = e->next) {
+    size_t len = strlen(e->path);
+    if (len >= suffix_len && strcmp(e->path + len - suffix_len, suffix) == 0) {
+      return e->path;
+    }
+  }
+  return NULL;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -182,11 +257,8 @@ static int find_file_recursive(const char *dir, const char *suffix, char *out,
 /* -------------------------------------------------------------------------- */
 
 /*
- * Resolve a class-relative path (e.g. "com/example/Foo.java") to an absolute
- * path on disk by searching from the git root.
- *
- * Returns a pointer that remains valid for the process lifetime.
- * Empty string means "source file not found on disk".
+ * Resolve a class-relative path to an absolute path that remains valid for the
+ * process lifetime. An empty string means the source file was not found.
  */
 static const char *resolve_source_file(const char *relative_path) {
   pthread_mutex_lock(&cache_lock);
@@ -197,20 +269,10 @@ static const char *resolve_source_file(const char *relative_path) {
     return cached;
   }
 
-  pthread_once(&git_root_once, find_git_root);
+  pthread_once(&source_index_once, source_index_init);
 
-  /* Build the suffix to search for: "/com/example/Foo.java" */
-  char suffix[PATH_MAX];
-  snprintf(suffix, sizeof(suffix), "/%s", relative_path);
-
-  char found[PATH_MAX];
-  const char *result = NULL;
-  if (find_file_recursive(git_root, suffix, found, sizeof(found))) {
-    result = cache_insert(relative_path, found);
-  } else {
-    /* Source not on disk (JDK class, dependency, etc.) */
-    result = cache_insert(relative_path, "");
-  }
+  const char *found = index_find(relative_path);
+  const char *result = cache_insert(relative_path, found ? found : "");
 
   pthread_mutex_unlock(&cache_lock);
   return result ? result : "";
@@ -578,5 +640,6 @@ JNIEXPORT void JNICALL Agent_OnUnload(JavaVM *jvm) {
     e = next;
   }
   source_cache = NULL;
+  index_free();
   pthread_mutex_unlock(&cache_lock);
 }
