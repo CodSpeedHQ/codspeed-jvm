@@ -5,11 +5,23 @@
 
 
 
+## [0.2.1] - 2026-09-23
+
+### <!-- 1 -->🐛 Bug Fixes
+- Make benchmark source file detection language-agnostic by @not-matthias in [#16](https://github.com/CodSpeedHQ/codspeed-jvm/pull/16)
+
+### <!-- 4 -->⚡ Performance
+- Index the git root once instead of walking it per source lookup by @not-matthias in [#17](https://github.com/CodSpeedHQ/codspeed-jvm/pull/17)
+
+
 ## [0.2.0] - 2026-06-04
 
 ### <!-- 0 -->🚀 Features
 - Add macOS-only FibFlamegraphBenchmark by @not-matthias in [#15](https://github.com/CodSpeedHQ/codspeed-jvm/pull/15)
 - Check that mvn is installed before running by @not-matthias in [#12](https://github.com/CodSpeedHQ/codspeed-jvm/pull/12)
+
+### <!-- 7 -->⚙️ Internals
+- Release v0.2.0 by @adriencaccia
 
 
 ## [0.1.1] - 2026-05-04
@@ -78,6 +90,7 @@
 - Initial commit by @not-matthias
 
 
+[0.2.1]: https://github.com/CodSpeedHQ/codspeed-jvm/compare/v0.2.0..v0.2.1
 [0.2.0]: https://github.com/CodSpeedHQ/codspeed-jvm/compare/v0.1.1..v0.2.0
 [0.1.1]: https://github.com/CodSpeedHQ/codspeed-jvm/compare/list..v0.1.1
 

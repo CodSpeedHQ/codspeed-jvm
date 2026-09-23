@@ -7,7 +7,7 @@ subprojects {
     apply(plugin = "maven-publish")
 
     group = "io.codspeed.jmh"
-    version = "0.2.0"
+    version = "0.2.1"
 
     repositories {
         mavenCentral()
