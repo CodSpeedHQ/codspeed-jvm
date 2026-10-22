@@ -30,8 +30,10 @@
 # Build JAR artifact only (useful for local profiling)
 ./gradlew :examples:example-gradle:jmhJar
 
-# Build and install JMH fork to local Maven repo (required before Maven example)
-cd jmh-fork && mvn clean install -DskipTests -q
+# Build and install JMH fork to local Maven repo (required before Maven example).
+# Must use Gradle: only the Gradle build compiles and bundles the native libraries.
+git submodule update --init --recursive
+./gradlew -p jmh-fork publishToMavenLocal
 
 # Build Maven example (after installing JMH fork)
 cd examples/example-maven && mvn package -q
@@ -113,7 +115,7 @@ The repository combines Maven and Gradle via Gradle's composite build feature:
 
 1. Make changes in `jmh-fork/`
 2. Bump version: `cd jmh-fork && mvn versions:set -DnewVersion=X.Y.Z`
-3. Publish locally: `cd jmh-fork && mvn clean install -DskipTests -q`
+3. Publish locally: `./gradlew -p jmh-fork publishToMavenLocal`
 4. Update version reference in root `build.gradle.kts` if needed
 5. Test both Gradle and Maven examples to verify compatibility
 

@@ -9,6 +9,9 @@ import java.nio.file.StandardCopyOption;
 
 public class InstrumentHooks {
 
+  /** Set by the CodSpeed runner for every benchmark process. */
+  private static final String CODSPEED_ENV_VAR = "CODSPEED_ENV";
+
   private static final boolean nativeAvailable;
 
   static {
@@ -17,8 +20,16 @@ public class InstrumentHooks {
       loadNativeLibrary("/libinstrument_hooks_jni.so");
       loaded = true;
     } catch (IOException | UnsatisfiedLinkError e) {
-      // Native library not available (e.g. non-Linux platform).
-      // All methods will gracefully no-op.
+      // Outside the CodSpeed runner (e.g. local runs, non-Linux), fall back to plain JMH quietly.
+      // Under the runner, a missing library means no results will be produced, so say why.
+      if (System.getenv(CODSPEED_ENV_VAR) != null) {
+        System.err.println(
+            "[CodSpeed] WARNING: could not load the native instrument-hooks library ("
+                + e.getMessage()
+                + "). Running as plain JMH: no CodSpeed results will be produced. Make sure the"
+                + " JMH fork was built with Gradle (./gradlew -p jmh-fork publishToMavenLocal),"
+                + " which bundles the native libraries.");
+      }
     }
     nativeAvailable = loaded;
   }

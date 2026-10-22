@@ -23,14 +23,14 @@ For information on how to integrate it, see the [CodSpeed documentation](https:/
 ### Prerequisites
 
 - JDK 21+
-- Maven (for building the JMH fork)
-- Gradle
+- A C toolchain (Linux only, to build the native libraries)
 
 ### Setup
 
-1. Build and install the JMH fork to your local Maven repository:
+1. Build and install the JMH fork to your local Maven repository. Use Gradle: only the Gradle build compiles and bundles the native libraries needed for CodSpeed measurements.
 ```bash
-cd jmh-fork && mvn clean install -DskipTests -q
+git submodule update --init --recursive
+./gradlew -p jmh-fork publishToMavenLocal
 ```
 
 2. Run the example benchmarks:
