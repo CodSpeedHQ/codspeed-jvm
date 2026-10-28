@@ -81,7 +81,7 @@ jobs:
         run: java -jar examples/example-maven/target/example-maven-1.0-SNAPSHOT.jar
 
   walltime-benchmarks:
-    runs-on: codspeed-macro
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         distribution: [corretto, temurin, oracle, zulu, microsoft, semeru]
@@ -103,7 +103,7 @@ jobs:
           run: ./gradlew :examples:example-gradle:jmh
 
   walltime-benchmarks-flamegraph:
-    runs-on: codspeed-macro
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
