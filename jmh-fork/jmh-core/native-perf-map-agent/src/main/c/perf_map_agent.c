@@ -16,6 +16,7 @@
 #define _GNU_SOURCE
 
 #include <jvmti.h>
+#include <jvmticmlr.h>
 
 #include <dirent.h>
 #include <limits.h>
@@ -306,15 +307,30 @@ static int open_map_file(const char *path) {
   return result;
 }
 
+static void format_entry(FILE *out, const void *code_addr, int code_size,
+                         const char *symbol) {
+  fprintf(out, "%lx %x %s\n", (unsigned long)(uintptr_t)code_addr,
+          (unsigned int)code_size, symbol);
+}
+
 static void write_entry(const void *code_addr, int code_size,
                         const char *symbol) {
   pthread_mutex_lock(&map_lock);
-  if (!map_file) {
-    pthread_mutex_unlock(&map_lock);
-    return;
+  if (map_file) {
+    format_entry(map_file, code_addr, code_size, symbol);
   }
-  fprintf(map_file, "%lx %x %s\n", (unsigned long)(uintptr_t)code_addr,
-          (unsigned int)code_size, symbol);
+  pthread_mutex_unlock(&map_lock);
+}
+
+/*
+ * Write a block of preformatted entries without letting the entries of
+ * another thread land in between.
+ */
+static void write_entries(const char *entries, size_t size) {
+  pthread_mutex_lock(&map_lock);
+  if (map_file) {
+    fwrite(entries, 1, size, map_file);
+  }
   pthread_mutex_unlock(&map_lock);
 }
 
@@ -426,32 +442,38 @@ static void class_sig_to_dotted(const char *class_sig, char *out,
 }
 
 /* -------------------------------------------------------------------------- */
-/* JVMTI callbacks                                                            */
+/* Method symbols                                                             */
 /* -------------------------------------------------------------------------- */
 
-static void JNICALL on_compiled_method_load(jvmtiEnv *jvmti, jmethodID method,
-                                            jint code_size,
-                                            const void *code_addr,
-                                            jint map_length,
-                                            const jvmtiAddrLocationMap *map,
-                                            const void *compile_info) {
-  (void)map_length;
-  (void)map;
-  (void)compile_info;
+typedef struct method_entry {
+  jmethodID method;
+  char *symbol;
+  struct method_entry *next;
+} method_entry_t;
 
-  if (code_size == 0) {
-    return;
-  }
+#define METHOD_CACHE_BUCKETS 4096
 
+static method_entry_t *method_cache[METHOD_CACHE_BUCKETS];
+static pthread_mutex_t method_cache_lock = PTHREAD_MUTEX_INITIALIZER;
+
+/*
+ * Build the perf map symbol of a method:
+ * "<absolute_source_path>::<class>.<method>" or "<class>.<method>" when the
+ * source file is not on disk.
+ *
+ * Returns a malloc'ed string, or NULL on failure.
+ */
+static char *build_method_symbol(jvmtiEnv *jvmti, jmethodID method) {
   jclass decl_class;
   if ((*jvmti)->GetMethodDeclaringClass(jvmti, method, &decl_class) !=
       JVMTI_ERROR_NONE) {
-    return;
+    return NULL;
   }
 
   char *class_sig = NULL;
   char *method_name = NULL;
   char *source_file = NULL;
+  char *result = NULL;
 
   (*jvmti)->GetClassSignature(jvmti, decl_class, &class_sig, NULL);
   (*jvmti)->GetMethodName(jvmti, method, &method_name, NULL, NULL);
@@ -477,8 +499,7 @@ static void JNICALL on_compiled_method_load(jvmtiEnv *jvmti, jmethodID method,
   } else {
     snprintf(symbol, sizeof(symbol), "%s.%s", dotted_class, method_name);
   }
-
-  write_entry(code_addr, code_size, symbol);
+  result = strdup(symbol);
 
 cleanup:
   if (class_sig) {
@@ -490,6 +511,172 @@ cleanup:
   if (source_file) {
     (*jvmti)->Deallocate(jvmti, (unsigned char *)source_file);
   }
+  return result;
+}
+
+/*
+ * Cached variant of build_method_symbol. The returned pointer stays valid for
+ * the process lifetime. Returns NULL if the method cannot be described.
+ */
+static const char *method_symbol(jvmtiEnv *jvmti, jmethodID method) {
+  size_t bucket = ((uintptr_t)method >> 3) % METHOD_CACHE_BUCKETS;
+
+  pthread_mutex_lock(&method_cache_lock);
+  for (method_entry_t *e = method_cache[bucket]; e; e = e->next) {
+    if (e->method == method) {
+      pthread_mutex_unlock(&method_cache_lock);
+      return e->symbol;
+    }
+  }
+  pthread_mutex_unlock(&method_cache_lock);
+
+  char *symbol = build_method_symbol(jvmti, method);
+  if (!symbol) {
+    return NULL;
+  }
+  method_entry_t *entry = malloc(sizeof(*entry));
+  if (!entry) {
+    free(symbol);
+    return NULL;
+  }
+  entry->method = method;
+  entry->symbol = symbol;
+
+  pthread_mutex_lock(&method_cache_lock);
+  entry->next = method_cache[bucket];
+  method_cache[bucket] = entry;
+  pthread_mutex_unlock(&method_cache_lock);
+  return symbol;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Inlined frames                                                             */
+/* -------------------------------------------------------------------------- */
+
+/* Separator between the frames of an inline stack, outermost frame first. */
+#define INLINE_FRAME_SEPARATOR "->"
+
+static int same_inline_stack(const PCStackInfo *a, const PCStackInfo *b) {
+  if (a->numstackframes != b->numstackframes) {
+    return 0;
+  }
+  return memcmp(a->methods, b->methods,
+                (size_t)a->numstackframes * sizeof(jmethodID)) == 0;
+}
+
+/*
+ * Write the entry of a code range whose instructions were all inlined from
+ * the same chain of methods: "<outermost>-><...>-><innermost>".
+ */
+static void write_inline_range(FILE *out, jvmtiEnv *jvmti, const char *start,
+                               const char *end, const PCStackInfo *stack) {
+  /* A single frame is the compiled method itself, already covered. */
+  if (!stack || stack->numstackframes < 2 || end <= start) {
+    return;
+  }
+
+  size_t capacity = 1;
+  for (jint i = 0; i < stack->numstackframes; i++) {
+    const char *symbol = method_symbol(jvmti, stack->methods[i]);
+    if (!symbol) {
+      return;
+    }
+    capacity += strlen(symbol) + strlen(INLINE_FRAME_SEPARATOR);
+  }
+
+  char *joined = malloc(capacity);
+  if (!joined) {
+    return;
+  }
+  joined[0] = '\0';
+  /* JVMTI lists the innermost frame first. */
+  for (jint i = stack->numstackframes - 1; i >= 0; i--) {
+    strcat(joined, method_symbol(jvmti, stack->methods[i]));
+    if (i > 0) {
+      strcat(joined, INLINE_FRAME_SEPARATOR);
+    }
+  }
+  format_entry(out, start, (int)(end - start), joined);
+  free(joined);
+}
+
+/*
+ * Write one entry per code range that was inlined into the compiled method.
+ *
+ * HotSpot attaches each debug record to the end of the instructions it
+ * describes, so the record at `pc` covers the addresses from the previous
+ * record's pc up to (excluding) `pc`. Those entries overlap the entry of the
+ * whole method and must directly follow it to take precedence.
+ */
+static void write_inline_entries(FILE *out, jvmtiEnv *jvmti,
+                                 const void *code_addr, jint code_size,
+                                 const void *compile_info) {
+  const char *code_start = code_addr;
+  const char *code_end = code_start + code_size;
+
+  const jvmtiCompiledMethodLoadRecordHeader *header = compile_info;
+  for (; header; header = header->next) {
+    if (header->kind != JVMTI_CMLR_INLINE_INFO) {
+      continue;
+    }
+    const jvmtiCompiledMethodLoadInlineRecord *record =
+        (const jvmtiCompiledMethodLoadInlineRecord *)header;
+
+    const char *range_start = code_start;
+    const PCStackInfo *range_stack = NULL;
+    const char *previous_pc = code_start;
+    for (jint i = 0; i < record->numpcs; i++) {
+      const PCStackInfo *stack = &record->pcinfo[i];
+      const char *pc = stack->pc;
+      if (pc <= previous_pc || pc > code_end) {
+        continue;
+      }
+      if (!range_stack || !same_inline_stack(range_stack, stack)) {
+        write_inline_range(out, jvmti, range_start, previous_pc, range_stack);
+        range_start = previous_pc;
+        range_stack = stack;
+      }
+      previous_pc = pc;
+    }
+    write_inline_range(out, jvmti, range_start, previous_pc, range_stack);
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* JVMTI callbacks                                                            */
+/* -------------------------------------------------------------------------- */
+
+static void JNICALL on_compiled_method_load(jvmtiEnv *jvmti, jmethodID method,
+                                            jint code_size,
+                                            const void *code_addr,
+                                            jint map_length,
+                                            const jvmtiAddrLocationMap *map,
+                                            const void *compile_info) {
+  (void)map_length;
+  (void)map;
+
+  if (code_size == 0) {
+    return;
+  }
+
+  const char *symbol = method_symbol(jvmti, method);
+  if (!symbol) {
+    return;
+  }
+
+  char *entries = NULL;
+  size_t entries_size = 0;
+  FILE *out = open_memstream(&entries, &entries_size);
+  if (!out) {
+    write_entry(code_addr, code_size, symbol);
+    return;
+  }
+  format_entry(out, code_addr, code_size, symbol);
+  write_inline_entries(out, jvmti, code_addr, code_size, compile_info);
+  fclose(out);
+
+  write_entries(entries, entries_size);
+  free(entries);
 }
 
 static void JNICALL on_dynamic_code_generated(jvmtiEnv *jvmti, const char *name,
